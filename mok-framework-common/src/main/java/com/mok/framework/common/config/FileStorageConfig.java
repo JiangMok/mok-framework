@@ -1,4 +1,4 @@
-package com.mok.framework.file.config;
+package com.mok.framework.common.config;
 
 import com.mok.framework.common.utils.LogUtils;
 import jakarta.annotation.PostConstruct;

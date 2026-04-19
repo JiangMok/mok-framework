@@ -1,4 +1,4 @@
-package com.mok.framework.common.entity.dto;
+package com.mok.framework.model.dto;
 
 import java.time.LocalDateTime;
 import java.util.Objects;

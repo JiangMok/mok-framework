@@ -1,7 +1,7 @@
-package com.mok.baseframe.dao;
+package com.mok.framework.base.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.mok.baseframe.entity.UserRoleEntity;
+import com.mok.framework.model.entity.UserRoleEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -22,5 +22,10 @@ public interface UserRoleMapper extends BaseMapper<UserRoleEntity> {
      * @return: java.lang.Long
      **/
     Long insertBatch(List<UserRoleEntity> userRoleEntityList);
+
+    /**
+     * 通过 roleId 查询所有使用了某一角色的用户
+     */
+    List<String> selectUserIdsByRoleId(String roleId);
 
 }

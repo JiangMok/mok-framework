@@ -43,7 +43,41 @@ mybatis-plus:
 # 跨环境通用的日志配置
 logging:
   level:
-    com.mok.baseframe: INFO  # 应用日志级别
+    com.mok.baseframe: debug  # 应用日志级别
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level [%thread] %logger{36} - %msg%n"  # 控制台日志格式
+# 应用自定义配置
+system:
+  sensitive-fields:  # 需要脱敏处理的字段列表
+    - password
+    - pwd
+    - confirmPassword
+    - oldPassword
+    - newPassword
+    - token
+    - secret
+    - apiKey
 
+# 文件存储配置
+file:
+  storage:
+    base-path: ${user.home}/mok-uploads  # 存储的物理路径
+    url-prefix: /api/uploads            # 注意：这里要加上 /api 前缀
+    base-url: http://localhost:8080     # 新增：基础URL
+    allowed-types:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - application/pdf
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+############ 系统动态配置 #############################################################################
+# 配置验证码生成验证的实现类 接口位置:com.mok.framework.captcha.service.CaptchaService
+captchaImpl:
+  generate:
+    type: mok-framework
+
+# 操作日志保存位置 接口位置:com.mok.framework.elasticsearch.service.OperationLogService
+operationlogImpl:
+  save-location:
+    type: es

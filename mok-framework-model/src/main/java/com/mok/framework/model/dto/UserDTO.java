@@ -1,4 +1,4 @@
-package com.mok.baseframe.dto;
+package com.mok.framework.model.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

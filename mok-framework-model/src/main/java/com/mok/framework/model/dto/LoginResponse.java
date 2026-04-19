@@ -1,4 +1,4 @@
-package com.mok.framework.auth.model.dto;
+package com.mok.framework.model.dto;
 
 import java.util.Objects;
 

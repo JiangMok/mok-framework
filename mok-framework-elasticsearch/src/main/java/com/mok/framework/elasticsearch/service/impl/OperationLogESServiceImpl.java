@@ -7,6 +7,7 @@ import com.mok.framework.common.PageResult;
 import com.mok.framework.elasticsearch.repository.OperationLogRepository;
 import com.mok.framework.elasticsearch.service.OperationLogService;
 import com.mok.framework.model.entity.OperationLogEntity;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -24,18 +25,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ElasticSearch 操作日志service实现类
+ * ElasticSearch 操作日志service实现类 ES保存
  *
  * @author: mok
  * @date: 2026/3/27
  */
 @Service
-public class ESOperationLogServiceImpl implements OperationLogService {
+@ConditionalOnProperty(name = "operationlogImpl.save-location.type", havingValue = "es")
+public class OperationLogESServiceImpl implements OperationLogService {
 
     private final OperationLogRepository operationLogRepository;
     private final ElasticsearchOperations elasticsearchOperations;
 
-    public ESOperationLogServiceImpl(OperationLogRepository operationLogRepository,
+    public OperationLogESServiceImpl(OperationLogRepository operationLogRepository,
                                      ElasticsearchOperations elasticsearchOperations) {
         this.operationLogRepository = operationLogRepository;
         this.elasticsearchOperations = elasticsearchOperations;

@@ -1,22 +1,22 @@
-package com.mok.baseframe.base.controller;
+package com.mok.framework.base.controller;
 
-import com.mok.baseframe.base.service.PermissionService;
-import com.mok.baseframe.base.service.RoleService;
-import com.mok.baseframe.common.PageParam;
-import com.mok.baseframe.common.PageResult;
-import com.mok.baseframe.common.R;
-import com.mok.baseframe.common.annotation.OperationLog;
-import com.mok.baseframe.dto.RoleDTO;
-import com.mok.baseframe.entity.PermissionEntity;
-import com.mok.baseframe.entity.RoleEntity;
-import com.mok.baseframe.common.enums.BusinessType;
-import com.mok.baseframe.common.utils.LogUtils;
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.mok.framework.base.service.PermissionService;
+import com.mok.framework.base.service.RoleService;
+import com.mok.framework.common.PageParam;
+import com.mok.framework.common.PageResult;
+import com.mok.framework.common.R;
+import com.mok.framework.common.annotation.OperationLog;
+import com.mok.framework.common.enums.BusinessType;
+import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.model.dto.RoleDTO;
+import com.mok.framework.model.entity.PermissionEntity;
+import com.mok.framework.model.entity.RoleEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +32,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/role")
-
 @Tag(name = "角色管理", description = "角色相关接口")
 public class RoleController {
     private static final Logger log = LogUtils.getLogger(RoleController.class);
@@ -56,7 +55,7 @@ public class RoleController {
     @Operation(summary = "分页查询角色列表")
     @OperationLog(title = "分页查询角色", businessType = BusinessType.QUERY)
     @PostMapping("/page")
-    @PreAuthorize("@permissionChecker.hasPermission('system:role:query')")
+    @SaCheckPermission("system:role:query")
     public R<PageResult<RoleEntity>> page(@RequestBody @Valid PageParam param) {
         return R.ok(roleService.getPageList(param));
     }
@@ -71,7 +70,7 @@ public class RoleController {
     @Operation(summary = "获取所有可用角色")
     @OperationLog(title = "获取所有可用角色", businessType = BusinessType.QUERY)
     @GetMapping("/all")
-    @PreAuthorize("@permissionChecker.hasPermission('system:role:query')")
+    @SaCheckPermission("system:role:query")
     public R<List<RoleEntity>> getAllRoles() {
         return R.ok(roleService.getAllActiveRoles());
     }
@@ -86,7 +85,7 @@ public class RoleController {
     @Operation(summary = "通过 id 获取角色详情")
     @OperationLog(title = "通过ID获取角色详情", businessType = BusinessType.QUERY)
     @GetMapping("/{id}")
-    @PreAuthorize("@permissionChecker.hasPermission('system:role:query')")
+    @SaCheckPermission("system:role:query")
     public R<Map<String, Object>> getRoleDetail(
             @Parameter(description = "角色ID") @PathVariable("id") String id) {
         if (id == null || id.trim().isEmpty()) {
@@ -118,7 +117,7 @@ public class RoleController {
     @Operation(summary = "创建角色")
     @OperationLog(title = "创建角色", businessType = BusinessType.INSERT)
     @PostMapping("/add")
-    @PreAuthorize("@permissionChecker.hasPermission('system:role:add')")
+    @SaCheckPermission("system:role:add")
     public R<String> createRole(@RequestBody @Valid RoleDTO roleDTO) {
         //todo 暂时设置为由"超级管理员"角色创建
         roleDTO.setCreateBy("1");
@@ -136,7 +135,7 @@ public class RoleController {
     @Operation(summary = "更新角色")
     @OperationLog(title = "更新角色", businessType = BusinessType.UPDATE)
     @PutMapping("/update")
-    @PreAuthorize("@permissionChecker.hasPermission('system:role:edit')")
+    @SaCheckPermission("system:role:edit")
     public R<String> updateRole(@RequestBody @Valid RoleDTO roleDTO) {
         if (roleService.updateRole(roleDTO)) {
             return R.ok("更新成功");
@@ -154,7 +153,7 @@ public class RoleController {
     @Operation(summary = "删除角色")
     @OperationLog(title = "删除角色", businessType = BusinessType.DELETE)
     @DeleteMapping("/delete/{id}")
-    @PreAuthorize("@permissionChecker.hasPermission('system:role:delete')")
+    @SaCheckPermission("system:role:delete")
     public R<String> deleteRole(@Parameter(description = "角色ID") @PathVariable("id") String id) {
         if (roleService.deleteRole(id)) {
             return R.ok("删除成功");
@@ -172,7 +171,7 @@ public class RoleController {
     @Operation(summary = "修改角色状态")
     @OperationLog(title = "修改角色状态", businessType = BusinessType.DELETE)
     @PutMapping("/{id}/status")
-    @PreAuthorize("@permissionChecker.hasPermission('system:role:edit')")
+    @SaCheckPermission("system:role:edit")
     public R<String> updateStatus(
             @Parameter(description = "角色ID") @PathVariable("id") String id,
             @Parameter(description = "状态：0-禁用，1-正常") @RequestParam("status") Integer status) {
@@ -208,7 +207,7 @@ public class RoleController {
     @Operation(summary = "获取权限树")
     @OperationLog(title = "获取权限树", businessType = BusinessType.QUERY)
     @GetMapping("/permission-tree")
-    @PreAuthorize("@permissionChecker.hasPermission('system:role:query')")
+    @SaCheckPermission("system:role:query")
     public R<List<Map<String, Object>>> getPermissionTree() {
         List<Map<String, Object>> permissionTree = permissionService.getPermissionTree();
         return R.ok(permissionTree);
@@ -224,7 +223,7 @@ public class RoleController {
     @Operation(summary = "分配角色权限")
     @OperationLog(title = "分配角色权限", businessType = BusinessType.INSERT)
     @PostMapping("/{id}/permissions")
-    @PreAuthorize("@permissionChecker.hasPermission('system:role:edit')")
+    @SaCheckPermission("system:role:edit")
     public R<String> assignPermissions(
             @Parameter(description = "角色ID") @PathVariable("id") String id,
             @RequestBody List<String> permissionIds) {
@@ -242,7 +241,7 @@ public class RoleController {
     @Operation(summary = "获取用户角色列表")
     @OperationLog(title = "获取用户角色列表", businessType = BusinessType.QUERY)
     @GetMapping("/user/{userId}")
-    @PreAuthorize("@permissionChecker.hasPermission('system:user:query')")
+    @SaCheckPermission("system:user:query")
     public R<List<RoleEntity>> getUserRoles(
             @Parameter(description = "用户ID") @PathVariable("userId") String userId) {
 

@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.mok.baseframe.dao.PermissionMapper">
+<mapper namespace="com.mok.framework.base.mapper.PermissionMapper">
 
     <!-- 根据用户ID查询权限 -->
-    <select id="selectPermissionsByUserId" resultType="com.mok.baseframe.entity.PermissionEntity">
+    <select id="selectPermissionsByUserId" resultType="com.mok.framework.model.entity.PermissionEntity">
         SELECT DISTINCT
             p.id,
             p.permission_name,
@@ -39,7 +39,7 @@
         ORDER BY
             p.sort
     </select>
-    <select id="selectPermissionsByUserIdByType" resultType="com.mok.baseframe.entity.PermissionEntity">
+    <select id="selectPermissionsByUserIdByType" resultType="com.mok.framework.model.entity.PermissionEntity">
         SELECT DISTINCT
             p.id,
             p.permission_name,
@@ -74,7 +74,7 @@
             p.sort
     </select>
     <!-- 根据角色ID查询权限 -->
-    <select id="selectPermissionsByRoleId" resultType="com.mok.baseframe.entity.PermissionEntity">
+    <select id="selectPermissionsByRoleId" resultType="com.mok.framework.model.entity.PermissionEntity">
         SELECT
             p.id,
             p.permission_name,
@@ -101,7 +101,7 @@
         ORDER BY
             p.sort
     </select>
-    <select id="selectAllPermissions" resultType="com.mok.baseframe.entity.PermissionEntity">
+    <select id="selectAllPermissions" resultType="com.mok.framework.model.entity.PermissionEntity">
         SELECT p.id,
                p.permission_name,
                p.permission_code,

@@ -1,4 +1,4 @@
-package com.mok.framework.base.mapper;
+package com.mok.framework.elasticsearch.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.mok.framework.model.entity.OperationLogEntity;

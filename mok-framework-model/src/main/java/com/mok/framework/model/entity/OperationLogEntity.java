@@ -1,4 +1,4 @@
-package com.mok.framework.elasticsearch.entity;
+package com.mok.framework.model.entity;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;

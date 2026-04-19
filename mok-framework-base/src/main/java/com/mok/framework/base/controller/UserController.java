@@ -1,25 +1,24 @@
-package com.mok.baseframe.base.controller;
+package com.mok.framework.base.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.util.IdUtil;
-import com.mok.baseframe.base.service.RoleService;
-import com.mok.baseframe.base.service.UserService;
-import com.mok.baseframe.common.PageParam;
-import com.mok.baseframe.common.PageResult;
-import com.mok.baseframe.common.R;
-import com.mok.baseframe.common.constant.ResponseCode;
-import com.mok.baseframe.common.annotation.OperationLog;
-import com.mok.baseframe.dto.UserDTO;
-import com.mok.baseframe.dto.UserUpdateDto;
-import com.mok.baseframe.entity.RoleEntity;
-import com.mok.baseframe.entity.UserEntity;
-import com.mok.baseframe.common.enums.BusinessType;
-import com.mok.baseframe.common.utils.LogUtils;
-import com.mok.baseframe.security.utils.SecurityUtils;
+import com.mok.framework.base.service.RoleService;
+import com.mok.framework.base.service.UserService;
+import com.mok.framework.common.PageParam;
+import com.mok.framework.common.PageResult;
+import com.mok.framework.common.R;
+import com.mok.framework.common.annotation.OperationLog;
+import com.mok.framework.common.constant.ResponseCode;
+import com.mok.framework.common.enums.BusinessType;
+import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.model.dto.UserDTO;
+import com.mok.framework.model.dto.UserUpdateDto;
+import com.mok.framework.model.entity.RoleEntity;
+import com.mok.framework.model.entity.UserEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,16 +40,13 @@ public class UserController {
     private final UserService userService;
     private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
-    private final SecurityUtils securityUtils;
 
     public UserController(UserService userService,
                           RoleService roleService,
-                          PasswordEncoder passwordEncoder,
-                          SecurityUtils securityUtils) {
+                          PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.roleService = roleService;
         this.passwordEncoder = passwordEncoder;
-        this.securityUtils = securityUtils;
     }
 
     /**
@@ -63,7 +59,7 @@ public class UserController {
     @Operation(summary = "分页查询用户信息")
     @OperationLog(title = "分页查询用户信息", businessType = BusinessType.QUERY)
     @PostMapping("/page")
-    @PreAuthorize("@permissionChecker.hasPermission('system:user:list')")
+    @SaCheckPermission("system:user:list")
     public R<PageResult<UserEntity>> page(@RequestBody @Valid PageParam param) {
         return R.ok(userService.getPageListWithPermission(param, true));
     }
@@ -78,7 +74,7 @@ public class UserController {
     @Operation(summary = "根据 id 查询用户信息")
     @OperationLog(title = "根据 id 查询用户信息", businessType = BusinessType.QUERY)
     @GetMapping("/{id}")
-    @PreAuthorize("@permissionChecker.hasPermission('system:user:query')")
+    @SaCheckPermission("system:user:query")
     public R<Map<String, Object>> detail(@PathVariable("id") String id) {
         // 参数校验
         if (id == null || id.trim().isEmpty()) {
@@ -87,10 +83,10 @@ public class UserController {
         // 数据权限检查
         if (!userService.canViewUser(id)) {
             log.warn("用户 {} 尝试访问无权限的用户信息: {}",
-                    securityUtils.getCurrentUsername(), id);
+                    userService.getById().getUsername(), id);
             return R.forbidden("无权查看该用户信息");
         }
-        UserEntity userEntity = userService.getById(id);
+        UserEntity userEntity = userService.getById();
         if (userEntity == null) {
             return R.error(404, "用户不存在");
         }
@@ -112,7 +108,7 @@ public class UserController {
     @Operation(summary = "创建用户")
     @OperationLog(title = "创建用户", businessType = BusinessType.INSERT)
     @PostMapping("/add")
-    @PreAuthorize("@permissionChecker.hasPermission('system:user:add')")
+    @SaCheckPermission("system:user:add")
     public R<String> create(@RequestBody @Valid UserDTO userDTO) {
         Long count = userService.lambdaQuery()
                 .eq(UserEntity::getUsername, userDTO.getUsername())
@@ -122,7 +118,7 @@ public class UserController {
             return R.error(1001, "用户名已存在");
         }
         // 获取当前登录用户，设置创建者
-        UserEntity currentUserEntity = securityUtils.getCurrentUser();
+        UserEntity currentUserEntity = userService.getById();
         if (currentUserEntity == null) {
             return R.error(401, "请先登录");
         }
@@ -158,7 +154,7 @@ public class UserController {
     @Operation(summary = "修改用户信息")
     @OperationLog(title = "修改用户信息", businessType = BusinessType.UPDATE)
     @PostMapping("/update")
-    @PreAuthorize("@permissionChecker.hasPermission('system:user:edit')")
+    @SaCheckPermission("system:user:edit")
     public R<String> update(@RequestBody @Valid UserUpdateDto userUpdateDto) {
         if (userUpdateDto.getId() == null) {
             return R.error(400, "用户ID不能为空");
@@ -166,7 +162,7 @@ public class UserController {
         // ==================== 新增：数据权限检查 ====================
         if (!userService.canEditUser(userUpdateDto.getId())) {
             log.warn("用户 {} 尝试修改无权限的用户信息: {}",
-                    securityUtils.getCurrentUsername(), userUpdateDto.getId());
+                    userService.getById().getUsername(), userUpdateDto.getId());
             return R.forbidden("无权修改该用户信息");
         }
         UserEntity userEntity = userService.getById(userUpdateDto.getId());
@@ -210,7 +206,7 @@ public class UserController {
     @Operation(summary = "删除用户信息")
     @OperationLog(title = "删除用户信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/delete/{id}")
-    @PreAuthorize("@permissionChecker.hasPermission('system:user:delete')")
+    @SaCheckPermission("system:user:delete")
     public R<String> delete(@PathVariable("id") String id) {
         // 参数校验
         if (id == null || id.trim().isEmpty()) {
@@ -219,7 +215,7 @@ public class UserController {
         //  数据权限检查
         if (!userService.canEditUser(id)) {
             log.warn("用户 {} 尝试删除无权限的用户: {}",
-                    securityUtils.getCurrentUsername(), id);
+                    userService.getById().getUsername(), id);
             return R.forbidden("无权删除该用户");
         }
         UserEntity userEntity = userService.getById(id);
@@ -231,7 +227,7 @@ public class UserController {
             return R.error("禁止删除超级管理员");
         }
         // 获取当前用户ID的正确方式，避免比较错误
-        UserEntity currentUser = securityUtils.getCurrentUser();
+        UserEntity currentUser = userService.getById();
         if (currentUser != null && id.equals(currentUser.getId())) {
             return R.error("禁止删除自己");
         }
@@ -252,14 +248,14 @@ public class UserController {
     @Operation(summary = "修改用户状态")
     @OperationLog(title = "修改用户状态", businessType = BusinessType.UPDATE)
     @PutMapping("updateUserStatus/{id}/{status}")
-    @PreAuthorize("@permissionChecker.hasPermission('system:user:edit')")
+    @SaCheckPermission("system:user:edit")
     public R<String> updateStatus(
             @PathVariable("id") String id,
             @PathVariable("status") Integer status) {
         // ==================== 新增：数据权限检查 ====================
         if (!userService.canEditUser(id)) {
             log.warn("用户 {} 尝试修改无权限的用户状态: {}",
-                    securityUtils.getCurrentUsername(), id);
+                    userService.getById().getUsername(), id);
             return R.forbidden("无权修改该用户状态");
         }
         Integer[] statusArray = {0, 1};
@@ -297,7 +293,7 @@ public class UserController {
     @Operation(summary = "重置用户密码")
     @OperationLog(title = "重置用户密码", businessType = BusinessType.UPDATE)
     @PutMapping("/resetPwd/{userId}")
-    @PreAuthorize("@permissionChecker.hasPermission('system:user:edit')")
+    @SaCheckPermission("system:user:edit")
     public R<String> resetUserPwdByUserId(@PathVariable("userId") String userId) {
         // 参数校验
         if (userId == null || userId.trim().isEmpty()) {
@@ -328,7 +324,7 @@ public class UserController {
     @Operation(summary = "更改用户密码")
     @OperationLog(title = "更改用户密码", businessType = BusinessType.UPDATE)
     @PostMapping("/updatePwd")
-    @PreAuthorize("@permissionChecker.hasPermission('system:user:edit')")
+    @SaCheckPermission("system:user:edit")
     public R<String> updateUserPwd(@RequestBody @Valid UserUpdateDto userUpdateDto) {
         if (!userService.canEditUser(userUpdateDto.getId())) {
             return R.error(ResponseCode.FORBIDDEN, "抱歉,您当前无权修改该用户");

@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+.setting
+/mok-framework-common/src/main/resources/mail.setting

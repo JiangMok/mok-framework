@@ -2,7 +2,7 @@ package com.mok.framework.auth.service;
 
 import com.mok.framework.model.entity.UserEntity;
 
-public interface UserService {
+public interface UserAuthService {
 
     /**
      * 获取一个用户

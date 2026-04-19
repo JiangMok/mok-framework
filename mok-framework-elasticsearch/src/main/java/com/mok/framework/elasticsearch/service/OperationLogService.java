@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * @author: mok
  * @date: 2026/3/27 15:54
  **/
-public interface ESOperationLogService {
+public interface OperationLogService {
 
     /**
      * @description: 查询所有数据

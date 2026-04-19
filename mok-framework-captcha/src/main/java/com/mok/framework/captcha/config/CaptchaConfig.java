@@ -1,11 +1,11 @@
-package com.mok.baseframe.common.config;
+package com.mok.framework.captcha.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties(prefix = "captcha")
-public class CaptchaConfig  {
+public class CaptchaConfig {
     private Integer width = 120;
     private Integer height = 40;
     private Integer length = 4;

@@ -1,7 +1,7 @@
-package com.mbs.common;
+package com.mok.framework.common;
 
 
-import com.mbs.common.constant.ResponseCode;
+import com.mok.framework.common.constant.ResponseCode;
 
 import java.io.Serializable;
 import java.util.Collections;

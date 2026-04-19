@@ -1,7 +1,7 @@
-package com.mok.baseframe.dao;
+package com.mok.framework.base.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.mok.baseframe.entity.RolePermissionEntity;
+import com.mok.framework.model.entity.RolePermissionEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;

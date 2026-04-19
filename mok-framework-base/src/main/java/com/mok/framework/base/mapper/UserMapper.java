@@ -1,7 +1,7 @@
-package com.mok.baseframe.dao;
+package com.mok.framework.base.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.mok.baseframe.entity.UserEntity;
+import com.mok.framework.model.entity.UserEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

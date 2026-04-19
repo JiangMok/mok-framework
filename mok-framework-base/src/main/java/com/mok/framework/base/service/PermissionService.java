@@ -1,10 +1,10 @@
-package com.mok.baseframe.base.service;
+package com.mok.framework.base.service;
 
-import com.mok.baseframe.common.PageParam;
-import com.mok.baseframe.common.PageResult;
-import com.mok.baseframe.dto.PermissionDTO;
-import com.mok.baseframe.entity.PermissionEntity;
-import com.mok.baseframe.entity.RoleEntity;
+
+import com.mok.framework.common.PageParam;
+import com.mok.framework.common.PageResult;
+import com.mok.framework.model.dto.PermissionDTO;
+import com.mok.framework.model.entity.PermissionEntity;
 
 import java.util.List;
 import java.util.Map;

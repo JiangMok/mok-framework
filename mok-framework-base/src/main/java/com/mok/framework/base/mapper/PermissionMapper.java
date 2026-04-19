@@ -1,7 +1,8 @@
-package com.mok.baseframe.dao;
+package com.mok.framework.base.mapper;
+
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.mok.baseframe.entity.PermissionEntity;
+import com.mok.framework.model.entity.PermissionEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

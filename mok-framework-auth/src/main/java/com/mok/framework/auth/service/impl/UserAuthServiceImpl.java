@@ -1,17 +1,17 @@
 package com.mok.framework.auth.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.mok.framework.auth.mapper.UserMapper;
+import com.mok.framework.auth.mapper.UserAuthMapper;
 import com.mok.framework.model.entity.UserEntity;
-import com.mok.framework.auth.service.UserService;
+import com.mok.framework.auth.service.UserAuthService;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserServiceImpl implements UserService {
+public class UserAuthServiceImpl implements UserAuthService {
 
-    private final UserMapper userMapper;
+    private final UserAuthMapper userMapper;
 
-    public UserServiceImpl(UserMapper userMapper) {
+    public UserAuthServiceImpl(UserAuthMapper userMapper) {
         this.userMapper = userMapper;
     }
 

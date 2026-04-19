@@ -5,8 +5,8 @@ import com.mok.framework.model.entity.UserEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 用户mapper
+ * 操作日志里的用户mapper
  */
 @Mapper
-public interface UserMapper extends BaseMapper<UserEntity> {
+public interface OperationLogUserMapper extends BaseMapper<UserEntity> {
 }

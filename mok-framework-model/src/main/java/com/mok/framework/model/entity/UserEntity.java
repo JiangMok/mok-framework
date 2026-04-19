@@ -1,4 +1,4 @@
-package com.mok.framework.auth.model.entity;
+package com.mok.framework.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 

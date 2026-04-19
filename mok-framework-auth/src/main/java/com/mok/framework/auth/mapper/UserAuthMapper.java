@@ -5,7 +5,7 @@ import com.mok.framework.model.entity.UserEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface UserMapper extends BaseMapper<UserEntity> {
+public interface UserAuthMapper extends BaseMapper<UserEntity> {
 
     /**
      * @description: 修改用户密码

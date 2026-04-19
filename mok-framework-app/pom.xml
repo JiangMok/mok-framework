@@ -3,6 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>com.mok.framework</groupId>
         <artifactId>mok-framework</artifactId>
@@ -17,4 +18,82 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencies>
+        <!-- Web 依赖：版本由父POM的父级 spring-boot-starter-parent 提供 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-auth</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-captcha</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-test</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-elasticsearch</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-monitor</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-mq</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-task</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-base</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-file</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <!-- 如需其他模块依赖，按需添加，版本已在父POM的 dependencyManagement 中定义 -->
+        <!--
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-auth</artifactId>
+        </dependency>
+        -->
+    </dependencies>
 </project>

@@ -1,4 +1,4 @@
-package com.mok.baseframe.entity;
+package com.mok.framework.model.entity;
 
 import java.util.Date;
 import java.util.Objects;

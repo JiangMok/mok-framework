@@ -6,6 +6,7 @@ import cn.hutool.core.util.IdUtil;
 import com.mok.framework.captcha.service.CaptchaService;
 import com.mok.framework.common.utils.LogUtils;
 import org.slf4j.Logger;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -17,16 +18,17 @@ import java.util.concurrent.TimeUnit;
  * 验证码实现类（基于 Hutool + Redis）
  */
 @Service
-public class CaptchaServiceImpl implements CaptchaService {
+@ConditionalOnProperty(name = "captchaImpl.generate.type", havingValue = "hutool")
+public class CaptchaHutoolServiceImpl implements CaptchaService {
 
-    private final static Logger log = LogUtils.getLogger(CaptchaServiceImpl.class);
+    private final static Logger log = LogUtils.getLogger(CaptchaHutoolServiceImpl.class);
 
     // 验证码在 Redis 中的缓存时间（单位：秒）
     private static final long CAPTCHA_EXPIRE_SECONDS = 300; // 5分钟
 
     private final StringRedisTemplate redisTemplate;
 
-    public CaptchaServiceImpl(StringRedisTemplate redisTemplate) {
+    public CaptchaHutoolServiceImpl(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
@@ -41,7 +43,7 @@ public class CaptchaServiceImpl implements CaptchaService {
         String imageBase64 = captcha.getImageBase64Data();
 
         // 2. 生成唯一标识 key（用于前端请求校验时携带）
-        String key = "captcha-key_"+IdUtil.simpleUUID();
+        String key = "captcha-key_" + IdUtil.simpleUUID();
 
         // 3. 将验证码文本存入 Redis，并设置过期时间
         redisTemplate.opsForValue().set(key, code, CAPTCHA_EXPIRE_SECONDS, TimeUnit.SECONDS);

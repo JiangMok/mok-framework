@@ -9,6 +9,8 @@ spring:
     url: jdbc:mysql://192.168.5.22:3306/mbs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai  # 数据库连接URL
     username: root  # 数据库用户名
     password: 123456  # 数据库密码
+    hikari:
+      max-lifetime: 300000  # 5分钟，单位毫秒
   # Redis配置 - 开发环境缓存
   data:
     redis:
@@ -23,61 +25,65 @@ spring:
           max-wait: -1ms    # 最大等待时间（-1表示无限等待）
           max-idle: 8       # 最大空闲连接数
           min-idle: 0       # 最小空闲连接数
-#  rabbitmq:
-#    # 基础连接配置
-#    host: 192.168.5.22             # RabbitMQ服务器地址（开发环境使用本地）
-#    port: 5672                 # RabbitMQ端口（默认5672）
-#    username: admin            # 用户名（默认guest）
-#    password: 123456            # 密码（默认guest）
-#    virtual-host: /            # 虚拟主机（默认/）
-#
-#    # 连接池配置
-#    connection-timeout: 30000  # 连接超时时间（30秒）
-#    cache:
-#      channel:
-#        size: 50               # 通道缓存大小
-#        checkout-timeout: 20000 # 获取通道超时时间
-##      connection:
-##        mode: CHANNEL          # 连接缓存模式
-##        size: 10               # 连接池大小
-#
-#    # 生产者配置（消息发送方）
-#    publisher-confirm-type: correlated  # 消息发送确认机制
-#    publisher-returns: true             # 启用消息返回机制
-#
-#    # 消息模板配置
-#    template:
-#      mandatory: true          # 当消息无法路由时返回给生产者
-#      retry:
-#        enabled: true          # 启用重试
-#        max-attempts: 3        # 最大重试次数
-#        initial-interval: 1000 # 初始重试间隔（毫秒）
-#
-#    # 消费者配置（消息接收方）
-#    listener:
-#      simple:
-#        acknowledge-mode: manual       # 手动确认消息（更可靠）
-#        concurrency: 2                 # 最小消费者数量
-#        max-concurrency: 3            # 最大消费者数量
-#        prefetch: 5                   # 每次预取的消息数量
-#        default-requeue-rejected: false     # 拒绝时不重新入队
-#        retry:
-#          enabled: true                # 启用消费重试
-#          max-attempts: 3              # 最大重试次数
-#          initial-interval: 3000       # 初始重试间隔（毫秒）
-#          max-interval: 10000          # 最大重试间隔（毫秒）
-#          multiplier: 2.0              # 重试间隔乘数
-#  elasticsearch:
-#    uris: http://192.168.5.22:9200
-#    username: elastic
-#    password: 123456
+  rabbitmq:
+    # 基础连接配置
+    host: 192.168.5.22             # RabbitMQ服务器地址（开发环境使用本地）
+    port: 5672                 # RabbitMQ端口（默认5672）
+    username: admin            # 用户名（默认guest）
+    password: 123456            # 密码（默认guest）
+    virtual-host: /            # 虚拟主机（默认/）
+
+    # 连接池配置
+    connection-timeout: 30000  # 连接超时时间（30秒）
+    cache:
+      channel:
+        size: 50               # 通道缓存大小
+        checkout-timeout: 20000 # 获取通道超时时间
+#      connection:
+#        mode: CHANNEL          # 连接缓存模式
+#        size: 10               # 连接池大小
+
+    # 生产者配置（消息发送方）
+    publisher-confirm-type: correlated  # 消息发送确认机制
+    publisher-returns: true             # 启用消息返回机制
+
+    # 消息模板配置
+    template:
+      mandatory: true          # 当消息无法路由时返回给生产者
+      retry:
+        enabled: true          # 启用重试
+        max-attempts: 3        # 最大重试次数
+        initial-interval: 1000 # 初始重试间隔（毫秒）
+
+    # 消费者配置（消息接收方）
+    listener:
+      simple:
+        acknowledge-mode: manual       # 手动确认消息（更可靠）
+        concurrency: 2                 # 最小消费者数量
+        max-concurrency: 3            # 最大消费者数量
+        prefetch: 5                   # 每次预取的消息数量
+        default-requeue-rejected: false     # 拒绝时不重新入队
+        retry:
+          enabled: true                # 启用消费重试
+          max-attempts: 3              # 最大重试次数
+          initial-interval: 3000       # 初始重试间隔（毫秒）
+          max-interval: 10000          # 最大重试间隔（毫秒）
+          multiplier: 2.0              # 重试间隔乘数
+  elasticsearch:
+    uris: http://192.168.5.22:9200
+    username: elastic
+    password: 123456
 
 ############## Sa-Token 配置 (文档: https://sa-token.cc) ##############
 sa-token:
   # token 名称（同时也是 cookie 名称）
-  token-name: satoken
-  # token 有效期（单位：秒） 默认30天，-1 代表永久有效
-  timeout: 2592000
+  token-name: Authorization
+  # token 前缀
+  token-prefix: Bearer
+  # token 有效期（单位：秒） 默认30天，-1 代表永久有效(600秒 >> 10分钟)
+  timeout: 30
+  # 从 Cookie 读取 Token
+  is-read-cookie: false
   # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
   active-timeout: -1
   # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
@@ -90,6 +96,7 @@ sa-token:
   is-log: true
     # jwt秘钥
   jwt-secret-key: asdasdasifhueuiwyurfewbfjsdafjk42564567845683245234768454fysfusdftdf
+  token-session-check-login: true
 
 
 # MyBatis Plus开发配置
@@ -172,15 +179,10 @@ logging:
 # ============================================
 
 # 操作日志配置（更新原有配置）
-#operation-log:
-#  enabled: true                 # 是否启用操作日志
-#  record-get: true              # 是否记录GET请求
-#  max-content-length: 2000      # 日志内容最大长度
-#  mq:
-#    enabled: true               # 是否使用消息队列记录操作日志
-#    queue-name: operation.log.queue    # 操作日志队列名称
-#    retry-times: 3              # 消息发送失败重试次数
-#    fallback-enabled: true      # 是否启用降级处理
+operation-log:
+  enabled: true                 # 是否启用操作日志
+  record-get: true              # 是否记录GET请求
+  max-content-length: 2000      # 日志内容最大长度
 
 # 消息队列监控（开发环境开启）
 #management:

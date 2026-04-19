@@ -1,9 +1,9 @@
-package com.mok.baseframe.base.service;
+package com.mok.framework.base.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.mok.baseframe.common.PageParam;
-import com.mok.baseframe.common.PageResult;
-import com.mok.baseframe.entity.UserEntity;
+import com.mok.framework.common.PageParam;
+import com.mok.framework.common.PageResult;
+import com.mok.framework.model.entity.UserEntity;
 
 import java.util.List;
 
@@ -69,4 +69,17 @@ public interface UserService extends IService<UserEntity> {
      * @return: boolean
      **/
     Integer updateUserPwdById(UserEntity userEntity);
+
+    /**
+     * 通过ID 获取User
+     *
+     * @param id
+     * @return
+     */
+    UserEntity getById(String id);
+
+    /**
+     * 通过 StpUtil.getLoginId() 来获取用户ID,再通过这个ID返回用户信息
+     */
+    UserEntity getById();
 }

@@ -1,21 +1,21 @@
-package com.mok.baseframe.base.service.impl;
+package com.mok.framework.base.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.mok.baseframe.base.service.PermissionService;
-import com.mok.baseframe.base.service.RoleService;
-import com.mok.baseframe.base.service.UserService;
-import com.mok.baseframe.common.PageParam;
-import com.mok.baseframe.common.PageResult;
-import com.mok.baseframe.dao.UserMapper;
-import com.mok.baseframe.dao.UserRoleMapper;
-import com.mok.baseframe.entity.PermissionEntity;
-import com.mok.baseframe.entity.RoleEntity;
-import com.mok.baseframe.entity.UserEntity;
-import com.mok.baseframe.common.utils.LogUtils;
-import com.mok.baseframe.security.utils.SecurityUtils;
+import com.mok.framework.base.mapper.UserMapper;
+import com.mok.framework.base.mapper.UserRoleMapper;
+import com.mok.framework.base.service.PermissionService;
+import com.mok.framework.base.service.RoleService;
+import com.mok.framework.base.service.UserService;
+import com.mok.framework.common.PageParam;
+import com.mok.framework.common.PageResult;
+import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.model.entity.PermissionEntity;
+import com.mok.framework.model.entity.RoleEntity;
+import com.mok.framework.model.entity.UserEntity;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,15 +34,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
     private static final Logger log = LogUtils.getLogger(UserServiceImpl.class);
 
     private final PermissionService permissionService;
-    private final SecurityUtils securityUtils;
     private final RoleService roleService;
+    private final UserMapper userMapper;
 
     public UserServiceImpl(PermissionService permissionService,
-                           SecurityUtils securityUtils,
-                           UserRoleMapper userRoleMapper, RoleService roleService) {
+                           UserRoleMapper userRoleMapper, RoleService roleService,
+                           UserMapper userMapper) {
         this.permissionService = permissionService;
-        this.securityUtils = securityUtils;
         this.roleService = roleService;
+        this.userMapper = userMapper;
     }
 
     /**
@@ -55,7 +55,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
     @Override
     public PageResult<UserEntity> getPageList(PageParam param) {
         // 获取当前登录用户
-        UserEntity currentUserEntity = securityUtils.getCurrentUser();
+        UserEntity currentUserEntity = getById();
         //创建 Mybatis Plus 的分页对象
         //  Page<User> : 分页对象
         //  参数1: param.getPageNum() 当前页码
@@ -155,7 +155,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         }
 
         // 获取当前登录用户
-        UserEntity currentUserEntity = securityUtils.getCurrentUser();
+        UserEntity currentUserEntity = getById();
         if (currentUserEntity == null) {
             return false;
         }
@@ -183,7 +183,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         }
 
         // 获取当前登录用户
-        UserEntity currentUserEntity = securityUtils.getCurrentUser();
+        UserEntity currentUserEntity = getById();
         if (currentUserEntity == null) {
             return false;
         }
@@ -213,6 +213,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
     @Transactional(rollbackFor = Exception.class)
     public Integer updateUserPwdById(UserEntity userEntity) {
         return baseMapper.updateUserPwdById(userEntity);
+    }
+
+    @Override
+    public UserEntity getById(String id) {
+        return userMapper.selectById(id);
+    }
+
+    @Override
+    public UserEntity getById() {
+        String userId = StpUtil.getLoginId().toString();
+        return userMapper.selectById(userId);
     }
 
     /**

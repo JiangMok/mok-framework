@@ -1,13 +1,12 @@
-package com.mok.baseframe.base.service;
+package com.mok.framework.base.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.mok.baseframe.common.PageParam;
-import com.mok.baseframe.common.PageResult;
-import com.mok.baseframe.dto.RoleDTO;
-import com.mok.baseframe.entity.PermissionEntity;
-import com.mok.baseframe.entity.RoleEntity;
+import com.mok.framework.common.PageParam;
+import com.mok.framework.common.PageResult;
+import com.mok.framework.model.dto.RoleDTO;
+import com.mok.framework.model.entity.PermissionEntity;
+import com.mok.framework.model.entity.RoleEntity;
 
-import javax.management.relation.Role;
 import java.util.List;
 
 /**

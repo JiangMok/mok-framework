@@ -13,6 +13,7 @@ import com.mok.framework.elasticsearch.mapper.OperationLogMapper;
 import com.mok.framework.elasticsearch.service.OperationLogService;
 import com.mok.framework.model.entity.OperationLogEntity;
 import org.slf4j.Logger;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -20,19 +21,19 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 
 /**
- * @description: 操作日志接口实现类
+ * @description: 操作日志service实现类 MySql保存
  * @author: JN
  * @date: 2026/1/5
  */
 
 @Service
-
-public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, OperationLogEntity> implements OperationLogService {
-    private static final Logger log = LogUtils.getLogger(OperationLogServiceImpl.class);
+@ConditionalOnProperty(name = "operationlogImpl.save-location.type", havingValue = "mysql")
+public class OperationLogMySqlServiceImpl extends ServiceImpl<OperationLogMapper, OperationLogEntity> implements OperationLogService {
+    private static final Logger log = LogUtils.getLogger(OperationLogMySqlServiceImpl.class);
 
     private final OperationLogConfig operationLogConfig;
 
-    public OperationLogServiceImpl(OperationLogConfig operationLogConfig) {
+    public OperationLogMySqlServiceImpl(OperationLogConfig operationLogConfig) {
         this.operationLogConfig = operationLogConfig;
     }
 

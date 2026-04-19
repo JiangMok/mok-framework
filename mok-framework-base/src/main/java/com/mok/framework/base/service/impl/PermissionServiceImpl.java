@@ -1,24 +1,23 @@
-package com.mok.baseframe.base.service.impl;
+package com.mok.framework.base.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.mok.baseframe.base.service.PermissionService;
-import com.mok.baseframe.common.BusinessException;
-import com.mok.baseframe.common.PageParam;
-import com.mok.baseframe.common.PageResult;
-import com.mok.baseframe.dao.PermissionMapper;
-import com.mok.baseframe.dao.RoleMapper;
-import com.mok.baseframe.dao.RolePermissionMapper;
-import com.mok.baseframe.dto.PermissionDTO;
-import com.mok.baseframe.entity.PermissionEntity;
-import com.mok.baseframe.entity.RoleEntity;
-import com.mok.baseframe.entity.RolePermissionEntity;
-import com.mok.baseframe.security.service.PermissionCacheService;
-import com.mok.baseframe.common.utils.LogUtils;
-import com.mok.baseframe.security.utils.SecurityUtils;
+import com.mok.framework.base.mapper.PermissionMapper;
+import com.mok.framework.base.mapper.RoleMapper;
+import com.mok.framework.base.mapper.RolePermissionMapper;
+import com.mok.framework.base.service.PermissionService;
+import com.mok.framework.common.BusinessException;
+import com.mok.framework.common.PageParam;
+import com.mok.framework.common.PageResult;
+import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.model.dto.PermissionDTO;
+import com.mok.framework.model.entity.PermissionEntity;
+import com.mok.framework.model.entity.RoleEntity;
+import com.mok.framework.model.entity.RolePermissionEntity;
 import org.slf4j.Logger;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -42,20 +41,14 @@ public class PermissionServiceImpl
     private static final Logger log = LogUtils.getLogger(PermissionServiceImpl.class);
     private final PermissionMapper permissionMapper;
     private final RoleMapper roleMapper;
-    private final SecurityUtils securityUtils;
     private final RolePermissionMapper rolePermissionMapper;
-    private final PermissionCacheService permissionCacheService;
 
     public PermissionServiceImpl(PermissionMapper permissionMapper,
                                  RoleMapper roleMapper,
-                                 SecurityUtils securityUtils,
-                                 RolePermissionMapper rolePermissionMapper,
-                                 PermissionCacheService permissionCacheService) {
+                                 RolePermissionMapper rolePermissionMapper) {
         this.permissionMapper = permissionMapper;
         this.roleMapper = roleMapper;
-        this.securityUtils = securityUtils;
         this.rolePermissionMapper = rolePermissionMapper;
-        this.permissionCacheService = permissionCacheService;
     }
 
     @Override
@@ -237,7 +230,7 @@ public class PermissionServiceImpl
         permissionEntity.setId(IdUtil.simpleUUID());
         save(permissionEntity);
         //查询当前用户的角色
-        String userId = securityUtils.getCurrentUserId();
+        String userId = StpUtil.getLoginId().toString();
         List<RoleEntity> roleEntityList = roleMapper.selectRolesByUserId(userId);
         //创建角色权限关联的list,方便后续批量插入
         List<RolePermissionEntity> rolePermissionEntityList = new ArrayList<>();
@@ -270,7 +263,6 @@ public class PermissionServiceImpl
             }
         }
         //清空redis里缓存的权限
-        permissionCacheService.clearAllPermissionCache();
         return permissionEntity.getId();
     }
 

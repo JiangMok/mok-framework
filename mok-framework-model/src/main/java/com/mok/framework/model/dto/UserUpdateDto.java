@@ -1,9 +1,10 @@
-package com.mok.baseframe.dto;
+package com.mok.framework.model.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
 import java.util.List;
 import java.util.Objects;
 

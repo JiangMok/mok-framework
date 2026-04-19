@@ -1,6 +1,5 @@
-package com.mok.baseframe.common;
+package com.mok.framework.common;
 
-import com.mok.baseframe.common.BusinessException;
 
 public class FileUploadException extends BusinessException {
     

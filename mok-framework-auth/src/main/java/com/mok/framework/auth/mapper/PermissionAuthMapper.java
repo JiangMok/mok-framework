@@ -12,7 +12,7 @@ import java.util.List;
  * @date: 2026/1/1 18:08
  **/
 @Mapper
-public interface PermissionMapper extends BaseMapper<PermissionEntity> {
+public interface PermissionAuthMapper extends BaseMapper<PermissionEntity> {
 
     /**
      * @description: 根据 userId 获取权限信息
@@ -22,6 +22,11 @@ public interface PermissionMapper extends BaseMapper<PermissionEntity> {
      * @return: java.util.List<com.mok.securityframework.entity.Permission>
      **/
     List<PermissionEntity> selectPermissionsByUserId(String userId);
+
+    /**
+     * 通过 userId 获取权限code
+     */
+    List<String> selectPermissionCodeByUserId(String userId);
 
 
 }

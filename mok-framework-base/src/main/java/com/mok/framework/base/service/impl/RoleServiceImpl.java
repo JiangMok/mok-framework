@@ -1,25 +1,23 @@
-package com.mok.baseframe.base.service.impl;
+package com.mok.framework.base.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.mok.baseframe.base.service.RoleService;
-import com.mok.baseframe.common.BusinessException;
-import com.mok.baseframe.common.PageParam;
-import com.mok.baseframe.common.PageResult;
-import com.mok.baseframe.dao.PermissionMapper;
-import com.mok.baseframe.dao.RoleMapper;
-import com.mok.baseframe.dao.RolePermissionMapper;
-import com.mok.baseframe.dao.UserRoleMapper;
-import com.mok.baseframe.dto.RoleDTO;
-import com.mok.baseframe.entity.*;
-import com.mok.baseframe.security.service.PermissionCacheService;
-import com.mok.baseframe.common.utils.LogUtils;
-import com.mok.baseframe.security.utils.SecurityUtils;
+import com.mok.framework.base.mapper.*;
+import com.mok.framework.base.service.RoleService;
+import com.mok.framework.common.BusinessException;
+import com.mok.framework.common.PageParam;
+import com.mok.framework.common.PageResult;
+import com.mok.framework.common.constant.PermissionCacheConstant;
+import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.model.dto.RoleDTO;
+import com.mok.framework.model.entity.*;
 import org.slf4j.Logger;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -42,25 +40,25 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
     private final UserRoleMapper userRoleMapper;
     private final RolePermissionMapper rolePermissionMapper;
     private final PermissionMapper permissionMapper;
-    private final SecurityUtils securityUtils;
-    private final PermissionCacheService permissionCacheService;
+    private final UserMapper userMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public RoleServiceImpl(UserRoleMapper userRoleMapper,
                            RolePermissionMapper rolePermissionMapper,
                            PermissionMapper permissionMapper,
-                           SecurityUtils securityUtils,
-                           PermissionCacheService permissionCacheService) {
+                           UserMapper userMapper,
+                           RedisTemplate<String, Object> redisTemplate) {
         this.userRoleMapper = userRoleMapper;
         this.rolePermissionMapper = rolePermissionMapper;
         this.permissionMapper = permissionMapper;
-        this.securityUtils = securityUtils;
-        this.permissionCacheService = permissionCacheService;
+        this.userMapper = userMapper;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
     public PageResult<RoleEntity> getPageList(PageParam param) {
         //创建角色查询器
-        List<RoleEntity> roleEntityList = baseMapper.selectRolesByUserId(securityUtils.getCurrentUserId());
+        List<RoleEntity> roleEntityList = baseMapper.selectRolesByUserId(StpUtil.getLoginId().toString());
         List<String> currentUserRoleIds = new ArrayList<>();
         for (RoleEntity roleEntity : roleEntityList) {
             currentUserRoleIds.add(roleEntity.getId());
@@ -249,7 +247,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
             throw new BusinessException("角色信息不能为空");
         }
 
-        UserEntity currentUserEntity = securityUtils.getCurrentUser();
+        UserEntity currentUserEntity = userMapper.selectById(StpUtil.getLoginId().toString());
         if (currentUserEntity == null) {
             throw new BusinessException("用户未登录");
         }
@@ -366,15 +364,15 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
 
             try {
                 rolePermissionMapper.insertBatch(rolePermissionEntities);
-                //清空redis里缓存的权限
-                permissionCacheService.clearAllPermissionCache();
+                // 清空受影响的用户的权限
+                clearUserPermissionCacheByRole(roleId);
             } catch (Exception e) {
                 log.error("批量插入角色权限失败", e);
                 throw new BusinessException("分配权限失败");
             }
         }
 
-        log.info("角色{}权限分配完成，分配权限数：{}", roleId,
+        log.info("========= 角色{}权限分配完成，分配权限数：{}", roleId,
                 permissionIds != null ? permissionIds.size() : 0);
     }
 
@@ -392,4 +390,40 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
         return baseMapper.selectCount(queryWrapper) > 0;
     }
 
+    /**
+     * 清空所有用户的权限
+     */
+    private void clearAllPermissionCache() {
+        // 定义缓存key的模式，匹配所有用户权限和菜单缓存
+        String pattern = "security:user:permissions:*";
+        // keys(pattern)获取所有匹配模式的key
+        // delete(keys)批量删除这些key
+        // 注意：keys操作在生产环境中可能影响性能，大数据量时建议使用scan命令
+        redisTemplate.delete(redisTemplate.keys(pattern));
+
+        // 记录调试日志
+        log.info("========== 已清除所有用户权限缓存");
+    }
+
+    /**
+     * 角色权限变更后，精准清除拥有该角色的所有用户的权限缓存
+     */
+    public void clearUserPermissionCacheByRole(String roleId) {
+        // 1. 查询拥有该角色的所有用户ID
+        List<String> userIds = userRoleMapper.selectUserIdsByRoleId(roleId);
+
+        if (userIds == null || userIds.isEmpty()) {
+            log.info("========== 角色 {} 权限变更，但无用户拥有此角色，无需清除缓存", roleId);
+            return;
+        }
+
+        // 2. 生成每个用户的权限缓存Key
+        List<String> cacheKeys = userIds.stream()
+                .map(userId -> String.format(PermissionCacheConstant.USER_PERMISSION_KEY, userId))
+                .toList();
+
+        // 3. 批量删除
+        redisTemplate.delete(cacheKeys);
+        log.info("========== 角色 {} 权限变更，已清除 {} 个用户的权限缓存", roleId, userIds.size());
+    }
 }
