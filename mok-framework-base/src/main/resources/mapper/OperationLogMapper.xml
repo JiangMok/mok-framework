@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mok.baseframe.dao.OperationLogMapper">
+
+    <!-- 查询操作最多的用户 -->
+    <select id="selectTopOperators" resultType="java.util.Map">
+        SELECT operator_name AS operatorName,
+               COUNT(*)      AS operationCount
+        FROM sys_operation_log
+        WHERE operator_name IS NOT NULL
+          AND operator_name != ''
+        GROUP BY operator_name
+        ORDER BY operationCount DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

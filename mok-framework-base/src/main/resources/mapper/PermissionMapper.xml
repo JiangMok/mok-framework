@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mok.baseframe.dao.PermissionMapper">
+
+    <!-- 根据用户ID查询权限 -->
+    <select id="selectPermissionsByUserId" resultType="com.mok.baseframe.entity.PermissionEntity">
+        SELECT DISTINCT
+            p.id,
+            p.permission_name,
+            p.permission_code,
+            p.description,
+            p.type,
+            p.parent_id,
+            p.icon,
+            p.path,
+            p.component,
+            p.sort,
+            p.visible,
+            p.`status`,
+            p.is_deleted,
+            p.create_time,
+            p.update_time
+        FROM
+            sys_permission p
+                LEFT JOIN sys_role_permission rp ON p.id = rp.permission_id
+                LEFT JOIN sys_role r ON rp.role_id = r.id
+                LEFT JOIN sys_user_role ur ON r.id = ur.role_id
+                LEFT JOIN sys_user u ON ur.user_id = u.id
+        WHERE
+            u.id = #{userId}
+          AND p.STATUS = 1
+          AND p.is_deleted = 0
+          AND r.STATUS = 1
+          AND r.is_deleted = 0
+          AND u.STATUS = 1
+          AND u.is_deleted = 0
+        ORDER BY
+            p.sort
+    </select>
+    <select id="selectPermissionsByUserIdByType" resultType="com.mok.baseframe.entity.PermissionEntity">
+        SELECT DISTINCT
+            p.id,
+            p.permission_name,
+            p.permission_code,
+            p.description,
+            p.type,
+            p.parent_id,
+            p.icon,
+            p.path,
+            p.component,
+            p.sort,
+            p.visible,
+            p.`status`,
+            p.is_deleted,
+            p.create_time,
+            p.update_time
+        FROM
+            sys_permission p
+                LEFT JOIN sys_role_permission rp ON p.id = rp.permission_id
+                LEFT JOIN sys_role r ON rp.role_id = r.id
+                LEFT JOIN sys_user_role ur ON r.id = ur.role_id
+                LEFT JOIN sys_user u ON ur.user_id = u.id
+        WHERE
+            u.id = #{userId} and p.type = #{type}
+          AND p.STATUS = 1
+          AND p.is_deleted = 0
+          AND r.STATUS = 1
+          AND r.is_deleted = 0
+          AND u.STATUS = 1
+          AND u.is_deleted = 0
+        ORDER BY
+            p.sort
+    </select>
+    <!-- 根据角色ID查询权限 -->
+    <select id="selectPermissionsByRoleId" resultType="com.mok.baseframe.entity.PermissionEntity">
+        SELECT
+            p.id,
+            p.permission_name,
+            p.permission_code,
+            p.description,
+            p.type,
+            p.parent_id,
+            p.icon,
+            p.path,
+            p.component,
+            p.sort,
+            p.visible,
+            p.`status`,
+            p.is_deleted,
+            p.create_time,
+            p.update_time
+        FROM
+            sys_permission p
+                LEFT JOIN sys_role_permission rp ON p.id = rp.permission_id
+        WHERE
+            rp.role_id = #{roleId}
+          AND p.STATUS = 1
+          AND p.is_deleted = 0
+        ORDER BY
+            p.sort
+    </select>
+    <select id="selectAllPermissions" resultType="com.mok.baseframe.entity.PermissionEntity">
+        SELECT p.id,
+               p.permission_name,
+               p.permission_code,
+               p.description,
+               p.type,
+               p.parent_id,
+               p.icon,
+               p.path,
+               p.component,
+               p.sort,
+               p.visible,
+               p.`status`,
+               p.is_deleted,
+               p.create_time,
+               p.update_time
+        FROM sys_permission p
+        ORDER BY p.sort
+    </select>
+</mapper>

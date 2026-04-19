@@ -1,0 +1,49 @@
+# Spring Boot应用主配置 - 控制加载哪个环境配置文件
+spring:
+  application:
+    name: mok-baseframe-satoken
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB # 应用名称，用于服务发现和监控
+  
+  # 激活的环境配置文件，默认使用dev环境
+  # 可以通过启动参数修改：--spring.profiles.active=prod
+  profiles:
+    active: dev
+  
+  # 配置文件加载顺序：后面的会覆盖前面的
+  # 1. application.yml（当前文件）
+  # 2. application-{profile}.yml（根据active加载）
+  # 3. 外部配置文件（优先级最高）
+  config:
+    import:
+      - optional:classpath:application-${spring.profiles.active}.yml  # 加载环境特定配置
+      - optional:file:./config/  # 加载外部配置文件目录
+      - optional:file:/etc/mok-framework/  # 加载系统级配置文件
+
+# 服务器基础配置
+server:
+  port: 8080            # 服务器端口
+  servlet:
+    context-path: /api  # 应用上下文路径，所有API的根路径
+  tomcat:
+    uri-encoding: UTF-8  # URI编码格式
+    max-threads: 200    # 最大线程数
+    min-spare-threads: 10  # 最小空闲线程数
+
+# MyBatis Plus基础配置（所有环境通用）
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/*.xml  # Mapper XML文件位置
+  type-aliases-package: com.mbs.*.entity  # 实体类包路径
+  configuration:
+    map-underscore-to-camel-case: true  # 开启驼峰命名自动转换
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # SQL日志输出到控制台
+
+# 跨环境通用的日志配置
+logging:
+  level:
+    com.mok.baseframe: INFO  # 应用日志级别
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level [%thread] %logger{36} - %msg%n"  # 控制台日志格式
+

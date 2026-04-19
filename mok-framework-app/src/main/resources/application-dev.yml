@@ -1,0 +1,195 @@
+# ============================================
+# 开发环境配置 - 用于本地开发和调试
+# ============================================
+
+spring:
+  # 数据源配置 - 开发环境数据库
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver  # MySQL驱动类
+    url: jdbc:mysql://192.168.5.22:3306/mbs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai  # 数据库连接URL
+    username: root  # 数据库用户名
+    password: 123456  # 数据库密码
+  # Redis配置 - 开发环境缓存
+  data:
+    redis:
+      host: 192.168.5.22 # Redis服务器地址
+      port: 6379            # Redis端口号
+      password: 123456      # Redis访问密码
+      database: 3           # Redis数据库索引（0-15）
+      timeout: 3000ms       # 连接超时时间
+      lettuce:
+        pool:
+          max-active: 20    # 连接池最大连接数
+          max-wait: -1ms    # 最大等待时间（-1表示无限等待）
+          max-idle: 8       # 最大空闲连接数
+          min-idle: 0       # 最小空闲连接数
+#  rabbitmq:
+#    # 基础连接配置
+#    host: 192.168.5.22             # RabbitMQ服务器地址（开发环境使用本地）
+#    port: 5672                 # RabbitMQ端口（默认5672）
+#    username: admin            # 用户名（默认guest）
+#    password: 123456            # 密码（默认guest）
+#    virtual-host: /            # 虚拟主机（默认/）
+#
+#    # 连接池配置
+#    connection-timeout: 30000  # 连接超时时间（30秒）
+#    cache:
+#      channel:
+#        size: 50               # 通道缓存大小
+#        checkout-timeout: 20000 # 获取通道超时时间
+##      connection:
+##        mode: CHANNEL          # 连接缓存模式
+##        size: 10               # 连接池大小
+#
+#    # 生产者配置（消息发送方）
+#    publisher-confirm-type: correlated  # 消息发送确认机制
+#    publisher-returns: true             # 启用消息返回机制
+#
+#    # 消息模板配置
+#    template:
+#      mandatory: true          # 当消息无法路由时返回给生产者
+#      retry:
+#        enabled: true          # 启用重试
+#        max-attempts: 3        # 最大重试次数
+#        initial-interval: 1000 # 初始重试间隔（毫秒）
+#
+#    # 消费者配置（消息接收方）
+#    listener:
+#      simple:
+#        acknowledge-mode: manual       # 手动确认消息（更可靠）
+#        concurrency: 2                 # 最小消费者数量
+#        max-concurrency: 3            # 最大消费者数量
+#        prefetch: 5                   # 每次预取的消息数量
+#        default-requeue-rejected: false     # 拒绝时不重新入队
+#        retry:
+#          enabled: true                # 启用消费重试
+#          max-attempts: 3              # 最大重试次数
+#          initial-interval: 3000       # 初始重试间隔（毫秒）
+#          max-interval: 10000          # 最大重试间隔（毫秒）
+#          multiplier: 2.0              # 重试间隔乘数
+#  elasticsearch:
+#    uris: http://192.168.5.22:9200
+#    username: elastic
+#    password: 123456
+
+############## Sa-Token 配置 (文档: https://sa-token.cc) ##############
+sa-token:
+  # token 名称（同时也是 cookie 名称）
+  token-name: satoken
+  # token 有效期（单位：秒） 默认30天，-1 代表永久有效
+  timeout: 2592000
+  # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
+  active-timeout: -1
+  # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个 token （为 true 时所有登录共用一个 token, 为 false 时每次登录新建一个 token）
+  is-share: false
+  # token 风格（默认可取值：uuid、simple-uuid、random-32、random-64、random-128、tik）
+  token-style: jwt
+  # 是否输出操作日志
+  is-log: true
+    # jwt秘钥
+  jwt-secret-key: asdasdasifhueuiwyurfewbfjsdafjk42564567845683245234768454fysfusdftdf
+
+
+# MyBatis Plus开发配置
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 控制台打印SQL日志（调试用）
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted  # 逻辑删除字段名
+      logic-delete-value: 1          # 逻辑删除值
+      logic-not-delete-value: 0      # 逻辑未删除值
+
+# JWT配置 - 开发环境令牌
+#jwt:
+#  secret: security-framework-secret-key-2024-01-01-change-in-production  # JWT加密密钥（开发环境可简单，生产环境必须复杂）
+#  token-expire: 7200000      # 访问令牌过期时间：2小时（毫秒）
+##  token-expire: 432000000      # 访问令牌过期时间：12小时（毫秒） 开发环境
+##  token-expire: 30000      # 访问令牌过期时间：2分钟（毫秒）
+#  refresh-token-expire: 604800000  # 刷新令牌过期时间：7天（毫秒）
+#  header: Authorization      # JWT在HTTP头中的字段名
+#  prefix: Bearer             # JWT前缀
+
+# 验证码配置
+#captcha:
+#  width: 120     # 验证码图片宽度（像素）
+#  height: 40     # 验证码图片高度（像素）
+#  length: 4      # 验证码字符长度
+#  expire: 300    # 验证码过期时间：5分钟（秒）
+#  type: math     # 验证码类型：math-数学计算，char-字符验证
+
+# API文档配置（开发环境开启）
+springdoc:
+  api-docs:
+    path: /v3/api-docs      # OpenAPI文档路径
+  swagger-ui:
+    path: /swagger-ui.html  # Swagger UI访问路径
+    operations-sorter: method  # 按HTTP方法排序
+    tags-sorter: alpha       # 按字母排序标签
+    display-request-duration: true  # 显示请求耗时
+    doc-expansion: none      # 文档默认不展开
+
+# 日志配置 - 开发环境详细日志
+logging:
+  level:
+    com.mok.baseframe: DEBUG  # 应用包日志级别设为DEBUG
+    org.springframework.security: DEBUG  # Spring Security日志级别
+    org.springframework.web: DEBUG       # Spring Web日志级别
+  file:
+    name: logs/security-framework.log  # 日志文件路径
+    max-size: 10MB     # 单个日志文件最大大小
+    max-history: 30    # 保留日志文件天数
+
+# 应用自定义配置
+#system:
+#  sensitive-fields:  # 需要脱敏处理的字段列表
+#    - password
+#    - pwd
+#    - confirmPassword
+#    - oldPassword
+#    - newPassword
+#    - token
+#    - secret
+#    - apiKey
+
+# 文件存储配置
+#file:
+#  storage:
+#    base-path: ${user.home}/mok-uploads  # 存储的物理路径
+#    url-prefix: /api/uploads            # 注意：这里要加上 /api 前缀
+#    base-url: http://localhost:8080     # 新增：基础URL
+#    allowed-types:
+#      - image/jpeg
+#      - image/png
+#      - image/gif
+#      - application/pdf
+#      - application/msword
+#      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+# ============================================
+# 消息队列相关业务配置
+# ============================================
+
+# 操作日志配置（更新原有配置）
+#operation-log:
+#  enabled: true                 # 是否启用操作日志
+#  record-get: true              # 是否记录GET请求
+#  max-content-length: 2000      # 日志内容最大长度
+#  mq:
+#    enabled: true               # 是否使用消息队列记录操作日志
+#    queue-name: operation.log.queue    # 操作日志队列名称
+#    retry-times: 3              # 消息发送失败重试次数
+#    fallback-enabled: true      # 是否启用降级处理
+
+# 消息队列监控（开发环境开启）
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,rabbit  # 暴露健康检查和RabbitMQ端点
+#  endpoint:
+#    rabbit:
+#      enabled: true             # 启用RabbitMQ监控端点
+#    health:
+#      show-details: always      # 显示健康检查详情

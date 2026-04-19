@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mok.baseframe.dao.RolePermissionMapper">
+
+    <insert id="insertBatch" parameterType="list">
+        INSERT INTO sys_role_permission
+        (
+        id,
+        role_id,
+        permission_id,
+        create_time
+        )
+        VALUES
+        <foreach collection="list" item="permissionEntityList" separator=",">
+            (
+            #{permissionEntityList.id},
+            #{permissionEntityList.roleId},
+            #{permissionEntityList.permissionId},
+            #{permissionEntityList.createTime}
+            )
+        </foreach>
+    </insert>
+</mapper>

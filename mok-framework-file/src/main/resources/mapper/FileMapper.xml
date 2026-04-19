@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mok.baseframe.dao.FileMapper">
+
+    <!-- 批量逻辑删除 -->
+    <update id="batchDelete">
+        UPDATE sys_file
+        SET status = 0,
+            is_deleted = 1,
+        update_time = NOW(),
+        update_by = #{updateBy}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND status = 1
+    </update>
+
+</mapper>

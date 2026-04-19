@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mok.baseframe.dao.RoleMapper">
+
+    <select id="selectRolesByUserId" resultType="com.mok.baseframe.entity.RoleEntity">
+        SELECT sr.id,
+               sr.role_name,
+               sr.role_code,
+               sr.description,
+               sr.sort,
+               sr.`status`,
+               sr.is_deleted,
+               sr.create_time,
+               sr.update_time
+        FROM sys_role sr,
+             sys_user_role sur
+        WHERE sur.role_id = sr.id
+          AND sr.`status` = 1
+          AND sr.is_deleted = 0
+          AND sur.user_id = #{userId}
+        ORDER BY sr.sort
+    </select>
+</mapper>

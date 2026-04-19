@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mok.framework.auth.mapper.UserMapper">
+
+    <update id="updateUserPwdById" parameterType="com.mok.framework.model.entity.UserEntity">
+        UPDATE `sys_user`
+        SET `password` = #{password}
+        WHERE `id` = #{id}
+    </update>
+
+    <select id="getByUsername" resultType="com.mok.framework.model.entity.UserEntity">
+        SELECT *
+        FROM `mbs`.`sys_user`
+        WHERE `username` = #{username}
+    </select>
+
+</mapper>
