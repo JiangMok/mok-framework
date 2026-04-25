@@ -32,14 +32,6 @@ server:
     max-threads: 200    # 最大线程数
     min-spare-threads: 10  # 最小空闲线程数
 
-# MyBatis Plus基础配置（所有环境通用）
-mybatis-plus:
-  mapper-locations: classpath*:/mapper/*.xml  # Mapper XML文件位置
-  type-aliases-package: com.mbs.*.entity  # 实体类包路径
-  configuration:
-    map-underscore-to-camel-case: true  # 开启驼峰命名自动转换
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # SQL日志输出到控制台
-
 # 跨环境通用的日志配置
 logging:
   level:
@@ -80,4 +72,4 @@ captchaImpl:
 # 操作日志保存位置 接口位置:com.mok.framework.elasticsearch.service.OperationLogService
 operationlogImpl:
   save-location:
-    type: es
+    type: mysql

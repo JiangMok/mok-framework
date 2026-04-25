@@ -23,13 +23,13 @@ import java.time.LocalDateTime;
  * @date: 2026/3/27
  */
 @RestController
-@RequestMapping("/es-operation-log")
+@RequestMapping("/operation-log")
 @Tag(name = "ElasticSearch操作日志", description = "ElasticSearch操作日志相关接口")
-public class ESOperationLogController {
+public class OperationLogController {
 
     private final OperationLogService operationLogService;
 
-    public ESOperationLogController(OperationLogService operationLogService) {
+    public OperationLogController(OperationLogService operationLogService) {
         this.operationLogService = operationLogService;
     }
 

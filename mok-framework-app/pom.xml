@@ -50,7 +50,7 @@
 
         <dependency>
             <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-elasticsearch</artifactId>
+            <artifactId>mok-framework-operationLog</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
@@ -84,16 +84,11 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
-        <!-- 如需其他模块依赖，按需添加，版本已在父POM的 dependencyManagement 中定义 -->
-        <!--
+        <!-- 动态数据源 -->
         <dependency>
-            <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-common</artifactId>
+            <groupId>com.baomidou</groupId>
+            <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-auth</artifactId>
-        </dependency>
-        -->
+
     </dependencies>
 </project>

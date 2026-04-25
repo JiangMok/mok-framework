@@ -27,7 +27,7 @@
 
         <dependency>
             <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-elasticsearch</artifactId>
+            <artifactId>mok-framework-operationLog</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 

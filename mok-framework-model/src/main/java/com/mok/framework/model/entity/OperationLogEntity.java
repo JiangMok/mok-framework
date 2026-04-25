@@ -1,5 +1,6 @@
 package com.mok.framework.model.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -15,6 +16,8 @@ import java.util.Objects;
  * @date: 2026/1/5 11:16
  **/
 @Document(indexName = "operation_log")   // 索引名，全小写
+// 多数据源配置 --- 表名
+@TableName("sys_operation_log")
 public class OperationLogEntity {
 
     @Id

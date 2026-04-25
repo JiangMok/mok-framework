@@ -5,12 +5,31 @@
 spring:
   # 数据源配置 - 开发环境数据库
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver  # MySQL驱动类
-    url: jdbc:mysql://192.168.5.22:3306/mbs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai  # 数据库连接URL
-    username: root  # 数据库用户名
-    password: 123456  # 数据库密码
-    hikari:
-      max-lifetime: 300000  # 5分钟，单位毫秒
+    dynamic:
+      primary: master  # 设置默认的数据源或者数据源组,默认值即为master
+      strict: false  # 严格匹配数据源,默认false. true未匹配到指定数据源时抛异常,false使用默认数据源
+      datasource:
+        master:
+          url: jdbc:mysql://192.168.5.22:3306/mbs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+          username: root
+          password: 123456
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          hikari:
+            max-lifetime: 300000
+            maximum-pool-size: 20
+            minimum-idle: 5
+            connection-timeout: 30000
+        # 操作日志数据源 - 用于存储操作日志
+        operationLog:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://192.168.5.22:3306/mf_operation_log?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+          username: root
+          password: 123456
+          hikari:
+            max-lifetime: 300000
+            maximum-pool-size: 10
+            minimum-idle: 2
+            connection-timeout: 30000
   # Redis配置 - 开发环境缓存
   data:
     redis:
@@ -102,12 +121,15 @@ sa-token:
 # MyBatis Plus开发配置
 mybatis-plus:
   configuration:
+    map-underscore-to-camel-case: true  # 开启驼峰命名自动转换
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 控制台打印SQL日志（调试用）
   global-config:
     db-config:
       logic-delete-field: isDeleted  # 逻辑删除字段名
       logic-delete-value: 1          # 逻辑删除值
       logic-not-delete-value: 0      # 逻辑未删除值
+  mapper-locations: classpath*:/mapper/*.xml  # Mapper XML文件位置
+  type-aliases-package: com.mok.framework.*.entity  # 实体类包路径
 
 # JWT配置 - 开发环境令牌
 #jwt:
@@ -144,6 +166,7 @@ logging:
     com.mok.baseframe: DEBUG  # 应用包日志级别设为DEBUG
     org.springframework.security: DEBUG  # Spring Security日志级别
     org.springframework.web: DEBUG       # Spring Web日志级别
+    org.springframework.boot.autoconfigure: DEBUG
   file:
     name: logs/security-framework.log  # 日志文件路径
     max-size: 10MB     # 单个日志文件最大大小

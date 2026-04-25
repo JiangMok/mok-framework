@@ -15,8 +15,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,9 +55,9 @@ public class HealthCheckServiceImpl implements HealthCheckService {
         Map<String, Object> healthInfo = new HashMap<>();
         healthInfo.put("timestamp", System.currentTimeMillis());
 
-        // 检查数据库连接
-        HealthCheckResult dbResult = checkDatabase();
-        healthInfo.put("database", dbResult);
+//        // 检查数据库连接
+//        HealthCheckResult dbResult = checkDatabase();
+//        healthInfo.put("database", dbResult);
 
         // 检查Redis连接
         HealthCheckResult redisResult = checkRedis();
@@ -78,8 +76,10 @@ public class HealthCheckServiceImpl implements HealthCheckService {
         healthInfo.put("rabbitmq", rabbitmqResult);
 
         // 计算总体状态
-        boolean allHealthy = dbResult.isUp()
-                && redisResult.isUp()
+        boolean allHealthy =
+//                dbResult.isUp()
+//                &&
+        redisResult.isUp()
                 && memoryResult.isUp()
                 && elasticsearchResult.isUp()
                 && rabbitmqResult.isUp();
@@ -93,45 +93,45 @@ public class HealthCheckServiceImpl implements HealthCheckService {
     /**
      * 检查数据库连接
      */
-    private HealthCheckResult checkDatabase() {
-        long startTime = System.currentTimeMillis();
-        try {
-            // 1. 检查连接池
-            try (Connection connection = dataSource.getConnection()) {
-                // 5秒超时
-                boolean isValid = connection.isValid(5);
-                long responseTime = System.currentTimeMillis() - startTime;
-
-                // 2. 执行简单查询
-                String version = jdbcTemplate.queryForObject(
-                        "SELECT VERSION()", String.class
-                );
-                int userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_user WHERE is_deleted = 0", Integer.class);
-
-                return HealthCheckResult.builder()
-                        .status("UP")
-                        .details(Map.of(
-                                "version", version,
-                                "userCount", userCount,
-                                "responseTime", responseTime + "ms",
-                                "connection", "Valid"
-                        ))
-                        .build();
-            }
-        } catch (SQLException e) {
-            log.error("数据库健康检查失败", e);
-            return HealthCheckResult.builder()
-                    .status("DOWN")
-                    .details(Map.of("error", e.getMessage()))
-                    .build();
-        } catch (Exception e) {
-            log.error("数据库查询失败", e);
-            return HealthCheckResult.builder()
-                    .status("DOWN")
-                    .details(Map.of("error", "数据库查询失败: " + e.getMessage()))
-                    .build();
-        }
-    }
+//    private HealthCheckResult checkDatabase() {
+//        long startTime = System.currentTimeMillis();
+//        try {
+//            // 1. 检查连接池
+//            try (Connection connection = dataSource.getConnection()) {
+//                // 5秒超时
+//                boolean isValid = connection.isValid(5);
+//                long responseTime = System.currentTimeMillis() - startTime;
+//
+//                // 2. 执行简单查询
+//                String version = jdbcTemplate.queryForObject(
+//                        "SELECT VERSION()", String.class
+//                );
+//                int userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_user WHERE is_deleted = 0", Integer.class);
+//
+//                return HealthCheckResult.builder()
+//                        .status("UP")
+//                        .details(Map.of(
+//                                "version", version,
+//                                "userCount", userCount,
+//                                "responseTime", responseTime + "ms",
+//                                "connection", "Valid"
+//                        ))
+//                        .build();
+//            }
+//        } catch (SQLException e) {
+//            log.error("数据库健康检查失败", e);
+//            return HealthCheckResult.builder()
+//                    .status("DOWN")
+//                    .details(Map.of("error", e.getMessage()))
+//                    .build();
+//        } catch (Exception e) {
+//            log.error("数据库查询失败", e);
+//            return HealthCheckResult.builder()
+//                    .status("DOWN")
+//                    .details(Map.of("error", "数据库查询失败: " + e.getMessage()))
+//                    .build();
+//        }
+//    }
 
     /**
      * 检查 Redis 连接

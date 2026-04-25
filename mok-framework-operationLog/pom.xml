@@ -9,7 +9,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>mok-framework-elasticsearch</artifactId>
+    <artifactId>mok-framework-operationLog</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -28,6 +28,12 @@
             <groupId>com.mok.framework</groupId>
             <artifactId>mok-framework-common</artifactId>
             <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <!-- 配置多数据源 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
         </dependency>
 
     </dependencies>

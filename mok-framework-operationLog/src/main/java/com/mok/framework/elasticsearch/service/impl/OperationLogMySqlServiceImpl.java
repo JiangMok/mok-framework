@@ -1,6 +1,7 @@
 package com.mok.framework.elasticsearch.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -38,6 +39,7 @@ public class OperationLogMySqlServiceImpl extends ServiceImpl<OperationLogMapper
     }
 
     @Override
+    @DS("operationLog")
     public PageResult<OperationLogEntity> getPageList(PageParam param) {
         Page<OperationLogEntity> page = new Page<>(param.getPageNum(), param.getPageSize());
         LambdaQueryWrapper<OperationLogEntity> wrapper = new LambdaQueryWrapper<>();
@@ -76,12 +78,14 @@ public class OperationLogMySqlServiceImpl extends ServiceImpl<OperationLogMapper
     }
 
     @Override
+    @DS("operationLog")
     public OperationLogEntity findById(String id) {
         return baseMapper.selectById(id);
     }
 
     @Transactional
     @Override
+    @DS("operationLog")
     public void saveOperationLog(OperationLogEntity logRecord) {
         if (!operationLogConfig.getEnabled()) {
             return;
@@ -111,12 +115,14 @@ public class OperationLogMySqlServiceImpl extends ServiceImpl<OperationLogMapper
 
     @Transactional
     @Override
+    @DS("operationLog")
     public void deleteById(String id) {
         baseMapper.deleteById(id);
     }
 
     @Transactional
     @Override
+    @DS("operationLog")
     public int cleanLogsBefore(LocalDateTime dateTime) {
         LambdaQueryWrapper<OperationLogEntity> wrapper = new LambdaQueryWrapper<>();
         //.lt 小于

@@ -25,7 +25,7 @@
         <module>mok-framework-auth</module>
         <module>mok-framework-captcha</module>
         <module>mok-framework-test</module>
-        <module>mok-framework-elasticsearch</module>
+        <module>mok-framework-operationLog</module>
         <module>mok-framework-monitor</module>
         <module>mok-framework-mq</module>
         <module>mok-framework-model</module>
@@ -74,6 +74,9 @@
 
         <!-- commons-lang3 -->
         <commons-lang3.version>3.17.0</commons-lang3.version>
+
+        <!-- 动态数据源版本 -->
+        <dynamic-datasource.version>4.3.1</dynamic-datasource.version>
     </properties>
 
     <dependencyManagement>
@@ -174,6 +177,13 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
+            </dependency>
+
+            <!-- 动态数据源 -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
+                <version>${dynamic-datasource.version}</version>
             </dependency>
 
         </dependencies>
