@@ -1,6 +1,6 @@
 package com.mok.framework.mq.consumer;
 
-import com.mok.framework.elasticsearch.service.OperationLogService;
+import com.mok.framework.operationLog.service.OperationLogService;
 import com.mok.framework.model.dto.OperationLogMessage;
 import com.mok.framework.model.entity.OperationLogEntity;
 import com.mok.framework.mq.config.OperationLogMQConfig;

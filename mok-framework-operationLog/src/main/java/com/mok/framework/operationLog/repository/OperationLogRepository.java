@@ -1,4 +1,4 @@
-package com.mok.framework.elasticsearch.repository;
+package com.mok.framework.operationLog.repository;
 
 import com.mok.framework.model.entity.OperationLogEntity;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;

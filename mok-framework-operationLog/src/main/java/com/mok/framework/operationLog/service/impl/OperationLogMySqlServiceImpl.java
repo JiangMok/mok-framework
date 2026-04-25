@@ -1,4 +1,4 @@
-package com.mok.framework.elasticsearch.service.impl;
+package com.mok.framework.operationLog.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
@@ -10,8 +10,8 @@ import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.config.OperationLogConfig;
 import com.mok.framework.common.utils.LogUtils;
-import com.mok.framework.elasticsearch.mapper.OperationLogMapper;
-import com.mok.framework.elasticsearch.service.OperationLogService;
+import com.mok.framework.operationLog.mapper.OperationLogMapper;
+import com.mok.framework.operationLog.service.OperationLogService;
 import com.mok.framework.model.entity.OperationLogEntity;
 import org.slf4j.Logger;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

@@ -1,4 +1,4 @@
-package com.mok.framework.elasticsearch.controller;
+package com.mok.framework.operationLog.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.mok.framework.common.PageParam;
@@ -6,7 +6,7 @@ import com.mok.framework.common.PageResult;
 import com.mok.framework.common.R;
 import com.mok.framework.common.annotation.OperationLog;
 import com.mok.framework.common.enums.BusinessType;
-import com.mok.framework.elasticsearch.service.OperationLogService;
+import com.mok.framework.operationLog.service.OperationLogService;
 import com.mok.framework.model.entity.OperationLogEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

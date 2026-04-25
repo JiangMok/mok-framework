@@ -1,11 +1,11 @@
-package com.mok.framework.elasticsearch.service.impl;
+package com.mok.framework.operationLog.service.impl;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
-import com.mok.framework.elasticsearch.repository.OperationLogRepository;
-import com.mok.framework.elasticsearch.service.OperationLogService;
+import com.mok.framework.operationLog.repository.OperationLogRepository;
+import com.mok.framework.operationLog.service.OperationLogService;
 import com.mok.framework.model.entity.OperationLogEntity;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Pageable;

@@ -1,6 +1,6 @@
 package com.mok.framework.mq.service.impl;
 
-import com.mok.framework.elasticsearch.service.OperationLogService;
+import com.mok.framework.operationLog.service.OperationLogService;
 import com.mok.framework.model.entity.OperationLogEntity;
 import com.mok.framework.mq.service.OperationLogConsumerService;
 import org.springframework.stereotype.Service;

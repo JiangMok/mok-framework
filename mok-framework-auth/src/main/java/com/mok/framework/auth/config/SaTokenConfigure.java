@@ -22,7 +22,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 public class SaTokenConfigure {
 
     private static final String BLACKLIST_PREFIX = "blacklist:token:";
-    public static final Long REFRESH_TOKEN_EXPIRE = 60L;//秒
+    public static final Long REFRESH_TOKEN_EXPIRE = 172800L;//秒
 
     private final Logger log = LogUtils.getLogger(SaTokenConfigure.class);
 
