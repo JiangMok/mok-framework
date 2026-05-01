@@ -32,6 +32,7 @@
         <module>mok-framework-task</module>
         <module>mok-framework-base</module>
         <module>mok-framework-file</module>
+        <module>mok-framework-excel</module>
     </modules>
 
     <properties>
@@ -70,13 +71,16 @@
         <jakarta.mail.version>2.0.2</jakarta.mail.version>
 
         <!-- commons-io -->
-        <commons-io.version>2.11.0</commons-io.version>
+        <commons-io.version>2.16.1</commons-io.version>
 
         <!-- commons-lang3 -->
         <commons-lang3.version>3.17.0</commons-lang3.version>
 
         <!-- 动态数据源版本 -->
         <dynamic-datasource.version>4.3.1</dynamic-datasource.version>
+
+        <!-- FESOD - apache电子表格 -->
+        <fesod-sheet.version>2.0.1-incubating</fesod-sheet.version>
     </properties>
 
     <dependencyManagement>
@@ -184,6 +188,13 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
                 <version>${dynamic-datasource.version}</version>
+            </dependency>
+
+            <!-- FESOD - apache电子表格 -->
+            <dependency>
+                <groupId>org.apache.fesod</groupId>
+                <artifactId>fesod-sheet</artifactId>
+                <version>${fesod-sheet.version}</version>
             </dependency>
 
         </dependencies>

@@ -90,5 +90,11 @@
             <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-excel</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 </project>
