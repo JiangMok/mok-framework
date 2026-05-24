@@ -218,3 +218,9 @@ operation-log:
 #      enabled: true             # 启用RabbitMQ监控端点
 #    health:
 #      show-details: always      # 显示健康检查详情
+mok:
+  ai:
+    provider: deepseek        # 切换 openai 即可
+    api-key: sk-591e9eba85be48c1aa4fb1ee8da675d9  # 替换为真实 key
+    model: deepseek-v4-flash
+    system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"
