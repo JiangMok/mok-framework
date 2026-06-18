@@ -130,6 +130,12 @@ public class OperationLogMySqlServiceImpl extends ServiceImpl<OperationLogMapper
         return baseMapper.delete(wrapper);
     }
 
+    @Override
+    public boolean checkOperationLogExistsById(String id) {
+        OperationLogEntity operationLogEntity = baseMapper.selectById(id);
+        return operationLogEntity != null;
+    }
+
 //    /**
 //     * @description: 获取操作日志的统计信息
 //     * 包括 : 总操作数、今日操作数、成功率、操作最多的用户

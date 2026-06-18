@@ -4,9 +4,9 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
+import com.mok.framework.model.entity.OperationLogEntity;
 import com.mok.framework.operationLog.repository.OperationLogRepository;
 import com.mok.framework.operationLog.service.OperationLogService;
-import com.mok.framework.model.entity.OperationLogEntity;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
@@ -162,5 +162,11 @@ public class OperationLogESServiceImpl implements OperationLogService {
     @Override
     public void deleteById(String id) {
         operationLogRepository.deleteById(id);
+    }
+
+    @Override
+    public boolean checkOperationLogExistsById(String id) {
+        OperationLogEntity operationLogEntity = operationLogRepository.findById(id).orElse(null);
+        return operationLogEntity != null;
     }
 }

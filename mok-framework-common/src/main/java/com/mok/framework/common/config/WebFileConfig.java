@@ -1,6 +1,5 @@
-package com.mok.framework.auth.config;
+package com.mok.framework.common.config;
 
-import com.mok.framework.common.config.FileStorageConfig;
 import com.mok.framework.common.utils.LogUtils;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Configuration;
