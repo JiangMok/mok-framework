@@ -3,9 +3,12 @@ package com.mok.framework.ai.controller;
 import cn.dev33.satoken.annotation.SaIgnore;
 import com.mok.framework.ai.service.SpringAiService;
 import com.mok.framework.common.R;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+
+import java.util.List;
 
 /**
  * spring ai
@@ -40,5 +43,17 @@ public class SpringAiController {
     @GetMapping(value = "/chatWithSpringAiFlux", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> chatFlux(@RequestParam("userInput") String userInput) {
         return springAiService.chatFlux(userInput);
+    }
+
+    @SaIgnore
+    @GetMapping("/history/{conversationId}")
+    public R<List<Message>> getHistory(@PathVariable String conversationId) {
+        return R.ok(springAiService.getHistoryByConversationId(conversationId));
+    }
+
+    @SaIgnore
+    @GetMapping("/getAllConversationIds")
+    public R<List<String>> getAllConversationIds() {
+        return R.ok(springAiService.getAllConversationIds());
     }
 }
