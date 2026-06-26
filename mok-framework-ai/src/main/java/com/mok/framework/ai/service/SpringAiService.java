@@ -1,5 +1,6 @@
 package com.mok.framework.ai.service;
 
+import com.mok.framework.model.entity.SpringAiEntity;
 import org.springframework.ai.chat.messages.Message;
 import reactor.core.publisher.Flux;
 
@@ -14,7 +15,7 @@ public interface SpringAiService {
      * @param: [userInput]
      * @return: java.lang.String
     **/
-    String chat(String userInput);
+    String syncChat(SpringAiEntity springAiEntity);
 
     /**
      * @description: 流式返回
@@ -23,7 +24,7 @@ public interface SpringAiService {
      * @param: [userInput]
      * @return: reactor.core.publisher.Flux<java.lang.String>
     **/
-    Flux<String> chatFlux(String userInput);
+    Flux<String> chatFlux(SpringAiEntity springAiEntity);
 
     /**
      * @description: 返回对话历史

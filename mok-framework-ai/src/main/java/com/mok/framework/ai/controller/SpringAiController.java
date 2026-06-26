@@ -1,8 +1,10 @@
 package com.mok.framework.ai.controller;
 
 import cn.dev33.satoken.annotation.SaIgnore;
+import cn.hutool.core.util.IdUtil;
 import com.mok.framework.ai.service.SpringAiService;
 import com.mok.framework.common.R;
+import com.mok.framework.model.entity.SpringAiEntity;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -34,21 +36,29 @@ public class SpringAiController {
      * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @SaIgnore
-    @PostMapping("/chatWithSpringAi")
-    public R<String> chat(@RequestParam("userInput") String userInput) {
-        return R.ok(springAiService.chat(userInput));
+    @PostMapping("/syncChat")
+    public R<String> syncChat(@RequestBody SpringAiEntity springAiEntity) {
+        return R.ok(springAiService.syncChat(springAiEntity));
     }
 
     @SaIgnore
-    @GetMapping(value = "/chatWithSpringAiFlux", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatFlux(@RequestParam("userInput") String userInput) {
-        return springAiService.chatFlux(userInput);
+    @PostMapping(value = "/streamChat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> streamChat(@RequestBody SpringAiEntity springAiEntity) {
+        return springAiService.chatFlux(springAiEntity);
     }
 
     @SaIgnore
     @GetMapping("/history/{conversationId}")
     public R<List<Message>> getHistory(@PathVariable String conversationId) {
         return R.ok(springAiService.getHistoryByConversationId(conversationId));
+    }
+
+    @SaIgnore
+    @GetMapping("/getConversationId")
+    public R<SpringAiEntity> getConversationId() {
+        SpringAiEntity springAiEntity = new SpringAiEntity();
+        springAiEntity.setConversationId("CID_"+IdUtil.fastSimpleUUID());
+        return R.ok(springAiEntity);
     }
 
     @SaIgnore
