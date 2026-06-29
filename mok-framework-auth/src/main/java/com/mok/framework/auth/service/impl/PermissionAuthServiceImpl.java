@@ -5,9 +5,9 @@ import com.mok.framework.auth.mapper.PermissionAuthMapper;
 import com.mok.framework.auth.mapper.UserAuthMapper;
 import com.mok.framework.auth.service.PermissionAuthService;
 import com.mok.framework.common.constant.PermissionCacheConstant;
+import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.entity.UserEntity;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class PermissionAuthServiceImpl implements PermissionAuthService {
 
-    private static final Logger log = LoggerFactory.getLogger(PermissionAuthServiceImpl.class);
+    private static final Logger log = LogUtils.getLogger(PermissionAuthServiceImpl.class);
 
     private final PermissionAuthMapper permissionMapper;
     private final UserAuthMapper userAuthMapper;

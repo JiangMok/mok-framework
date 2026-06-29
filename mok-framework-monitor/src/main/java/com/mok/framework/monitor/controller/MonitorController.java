@@ -30,14 +30,14 @@ public class MonitorController {
      * @author: JN
      * @date: 2026/1/6 14:40
      * @param: []
-     * @return: com.mok.securityframework.common.R<java.util.Map < java.lang.String, java.lang.Object>>
+     * @return: com.mok.framework.common.R<java.util.Map < java.lang.String, java.lang.Object>>
      **/
     @Operation(summary = "获取系统信息")
     @OperationLog(title = "获取系统信息", businessType = BusinessType.QUERY)
     @GetMapping("/info")
     public R<Map<String, Object>> getSystemInfo() {
         Map<String, Object> info = Map.of(
-                "appName", "MOK-BaseFrame",
+                "appName", "MOK-framework",
                 "version", "1.1.0",
                 "javaVersion", System.getProperty("java.version"),
                 "osName", System.getProperty("os.name"),
@@ -55,7 +55,7 @@ public class MonitorController {
      * @author: JN
      * @date: 2026/1/6 14:55
      * @param: []
-     * @return: com.mok.securityframework.common.R<java.util.Map < java.lang.String, java.lang.Object>>
+     * @return: com.mok.framework.common.R<java.util.Map < java.lang.String, java.lang.Object>>
      **/
     @Operation(summary = "健康检查")
     @GetMapping("/health")

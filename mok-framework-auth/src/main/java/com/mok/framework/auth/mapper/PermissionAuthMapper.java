@@ -19,7 +19,7 @@ public interface PermissionAuthMapper extends BaseMapper<PermissionEntity> {
      * @author: JN
      * @date: 2026/1/2 13:29
      * @param: [userId]
-     * @return: java.util.List<com.mok.securityframework.entity.Permission>
+     * @return: java.util.List<com.mok.framework.entity.Permission>
      **/
     List<PermissionEntity> selectPermissionsByUserId(String userId);
 

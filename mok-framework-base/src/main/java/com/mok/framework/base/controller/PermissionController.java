@@ -55,7 +55,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/6 14:21
      * @param: []
-     * @return: com.mok.securityframework.common.R<java.util.List < java.util.Map < java.lang.String, java.lang.Object>>>
+     * @return: com.mok.framework.common.R<java.util.List < java.util.Map < java.lang.String, java.lang.Object>>>
      **/
     @Operation(summary = "获取权限树")
     @GetMapping("/tree")
@@ -71,7 +71,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/6 14:21
      * @param: []
-     * @return: com.mok.securityframework.common.R<java.util.List < java.util.Map < java.lang.String, java.lang.Object>>>
+     * @return: com.mok.framework.common.R<java.util.List < java.util.Map < java.lang.String, java.lang.Object>>>
      **/
     @Operation(summary = "获取菜单树")
     @OperationLog(title = "获取菜单树", businessType = BusinessType.QUERY)
@@ -87,7 +87,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/6 14:21
      * @param: []
-     * @return: com.mok.securityframework.common.R<java.util.List < java.util.Map < java.lang.String, java.lang.Object>>>
+     * @return: com.mok.framework.common.R<java.util.List < java.util.Map < java.lang.String, java.lang.Object>>>
      **/
     @Operation(summary = "获取当前用户菜单")
     @OperationLog(title = "获取当前用户", businessType = BusinessType.QUERY)
@@ -103,7 +103,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/6 14:22
      * @param: []
-     * @return: com.mok.securityframework.common.R<java.util.List < com.mok.securityframework.entity.Permission>>
+     * @return: com.mok.framework.common.R<java.util.List < com.mok.framework.entity.Permission>>
      **/
     @Operation(summary = "获取接口权限列表")
     @OperationLog(title = "获取接口权限列表", businessType = BusinessType.QUERY)
@@ -138,7 +138,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/6 14:22
      * @param: [id]
-     * @return: com.mok.securityframework.common.R<com.mok.securityframework.entity.Permission>
+     * @return: com.mok.framework.common.R<com.mok.framework.entity.Permission>
      **/
     @Operation(summary = "获取权限详情")
     @OperationLog(title = "获取权限详情", businessType = BusinessType.QUERY)
@@ -163,7 +163,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/6 14:22
      * @param: [permissionDTO]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "创建权限")
     @OperationLog(title = "创建权限", businessType = BusinessType.INSERT)
@@ -179,7 +179,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/6 14:22
      * @param: [permissionDTO]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "更新权限")
     @OperationLog(title = "更新权限", businessType = BusinessType.UPDATE)
@@ -195,7 +195,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/6 14:22
      * @param: [id]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "删除权限")
     @OperationLog(title = "删除权限", businessType = BusinessType.DELETE)
@@ -213,7 +213,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/6 14:22
      * @param: [type]
-     * @return: com.mok.securityframework.common.R<java.util.List < com.mok.securityframework.entity.Permission>>
+     * @return: com.mok.framework.common.R<java.util.List < com.mok.framework.entity.Permission>>
      **/
     @Operation(summary = "获取指定类型的权限")
     @OperationLog(title = "获取指定类型的权限", businessType = BusinessType.QUERY)
@@ -236,7 +236,7 @@ public class PermissionController {
      * @author: JN
      * @date: 2026/1/19 16:56
      * @param: [roleId]
-     * @return: com.mok.baseframe.common.R<java.util.List < com.mok.baseframe.entity.PermissionEntity>>
+     * @return: com.mok.framework.common.R<java.util.List < com.mok.framework.entity.PermissionEntity>>
      **/
     @Operation(summary = "通过角色ID获取权限")
     @OperationLog(title = "通过角色ID获取权限", businessType = BusinessType.QUERY)

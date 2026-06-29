@@ -2,6 +2,7 @@ package com.mok.framework.mq.consumer;
 
 import cn.hutool.extra.mail.MailUtil;
 import com.alibaba.fastjson2.JSON;
+import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.mail.service.MailLogService;
 import com.mok.framework.mail.util.MailLogBuilder;
 import com.mok.framework.model.dto.SystemCheckMailMessage;
@@ -12,7 +13,6 @@ import com.mok.framework.mq.config.queue.SystemCheckMailMQConfig;
 import com.mok.framework.mq.service.MqFailedMessageSaver;
 import com.rabbitmq.client.Channel;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
 @Component
 public class SystemCheckMailConsumer {
 
-    private static final Logger log = LoggerFactory.getLogger(SystemCheckMailConsumer.class);
+    private static final Logger log = LogUtils.getLogger(SystemCheckMailConsumer.class);
 
     private final MailLogService mailLogService;
     private final MqFailedMessageSaver mqFailedMessageSaver;

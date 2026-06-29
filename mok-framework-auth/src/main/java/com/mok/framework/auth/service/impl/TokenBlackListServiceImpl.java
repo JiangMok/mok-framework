@@ -1,9 +1,6 @@
 package com.mok.framework.auth.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.mok.framework.auth.service.TokenBlackListService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +11,6 @@ public class TokenBlackListServiceImpl implements TokenBlackListService {
 
     private static final String BLACKLIST_PREFIX = "blacklist:token:";
 
-    private static final Logger log = LoggerFactory.getLogger(TokenBlackListServiceImpl.class);
     private final StringRedisTemplate redisTemplate;
 
     public TokenBlackListServiceImpl(StringRedisTemplate redisTemplate) {

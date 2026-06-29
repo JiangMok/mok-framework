@@ -54,7 +54,7 @@ public class UserController {
      * @author: JN
      * @date: 2026/1/2 16:16
      * @param: [param]
-     * @return: com.mok.securityframework.common.R<com.mok.securityframework.common.PageResult < com.mok.securityframework.entity.User>>
+     * @return: com.mok.framework.common.R<com.mok.framework.common.PageResult < com.mok.framework.entity.User>>
      **/
     @Operation(summary = "分页查询用户信息")
     @OperationLog(title = "分页查询用户信息", businessType = BusinessType.QUERY)
@@ -69,7 +69,7 @@ public class UserController {
      * @author: JN
      * @date: 2026/1/2 16:20
      * @param: [id]
-     * @return: com.mok.securityframework.common.R<java.util.Map < java.lang.String, java.lang.Object>>
+     * @return: com.mok.framework.common.R<java.util.Map < java.lang.String, java.lang.Object>>
      **/
     @Operation(summary = "根据 id 查询用户信息")
     @OperationLog(title = "根据 id 查询用户信息", businessType = BusinessType.QUERY)
@@ -103,7 +103,7 @@ public class UserController {
      * @author: JN
      * @date: 2026/1/2 16:27
      * @param: [userDTO]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "创建用户")
     @OperationLog(title = "创建用户", businessType = BusinessType.INSERT)
@@ -149,7 +149,7 @@ public class UserController {
      * @author: JN
      * @date: 2026/1/2 16:41
      * @param: [userDto]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "修改用户信息")
     @OperationLog(title = "修改用户信息", businessType = BusinessType.UPDATE)
@@ -201,7 +201,7 @@ public class UserController {
      * @author: JN
      * @date: 2026/1/2 17:12
      * @param: [id]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "删除用户信息")
     @OperationLog(title = "删除用户信息", businessType = BusinessType.DELETE)
@@ -243,7 +243,7 @@ public class UserController {
      * @author: JN
      * @date: 2026/1/2 17:17
      * @param: [id, status]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "修改用户状态")
     @OperationLog(title = "修改用户状态", businessType = BusinessType.UPDATE)
@@ -288,7 +288,7 @@ public class UserController {
      * @author: JN
      * @date: 2026/1/14 12:00
      * @param: [userId]
-     * @return: com.mok.baseframe.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "重置用户密码")
     @OperationLog(title = "重置用户密码", businessType = BusinessType.UPDATE)
@@ -319,7 +319,7 @@ public class UserController {
      * @author: JN
      * @date: 2026/1/15 09:44
      * @param: [userEntity]
-     * @return: com.mok.baseframe.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "更改用户密码")
     @OperationLog(title = "更改用户密码", businessType = BusinessType.UPDATE)

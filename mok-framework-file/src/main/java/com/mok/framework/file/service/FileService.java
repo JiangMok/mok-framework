@@ -18,7 +18,7 @@ public interface FileService {
      * @author: JN
      * @date: 2026/1/21 14:11
      * @param: [param]
-     * @return: com.mok.baseframe.common.PageResult<com.mok.baseframe.dto.FileUploadResponse>
+     * @return: com.mok.framework.common.PageResult<com.mok.framework.dto.FileUploadResponse>
     **/
     PageResult<FileEntity> getPageList(PageParam param);
     

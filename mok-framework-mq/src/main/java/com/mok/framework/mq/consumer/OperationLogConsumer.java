@@ -1,18 +1,15 @@
 package com.mok.framework.mq.consumer;
 
 import com.alibaba.fastjson2.JSON;
-import com.mok.framework.model.entity.MqFailedMessage;
+import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.enums.MessageType;
 import com.mok.framework.mq.service.MqFailedMessageSaver;
-import com.mok.framework.mq.service.MqFailedMessageService;
-import com.mok.framework.mq.util.MqFailedMessageBuilder;
 import com.mok.framework.operationLog.service.OperationLogService;
 import com.mok.framework.model.dto.OperationLogMessage;
 import com.mok.framework.model.entity.OperationLogEntity;
 import com.mok.framework.mq.config.queue.OperationLogMQConfig;
 import com.rabbitmq.client.Channel;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -30,7 +27,7 @@ import java.time.LocalDateTime;
 @Component
 public class OperationLogConsumer {
 
-    private static final Logger log = LoggerFactory.getLogger(OperationLogConsumer.class);
+    private static final Logger log = LogUtils.getLogger(OperationLogConsumer.class);
 
     private final OperationLogService operationLogService;
     private final MqFailedMessageSaver mqFailedMessageSaver;

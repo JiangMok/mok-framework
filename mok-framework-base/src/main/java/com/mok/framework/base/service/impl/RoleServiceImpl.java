@@ -104,7 +104,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
      * @author: JN
      * @date: 2026/1/2 11:27
      * @param: []
-     * @return: java.util.List<com.mok.securityframework.entity.Role>
+     * @return: java.util.List<com.mok.framework.entity.Role>
      **/
     @Override
     public List<RoleEntity> getAllActiveRoles() {
@@ -122,7 +122,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
      * @author: JN
      * @date: 2026/1/2 11:31
      * @param: [userId]
-     * @return: java.util.List<com.mok.securityframework.entity.Role>
+     * @return: java.util.List<com.mok.framework.entity.Role>
      **/
     @Override
     public List<RoleEntity> getRolesByUserId(String userId) {

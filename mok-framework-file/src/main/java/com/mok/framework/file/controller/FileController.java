@@ -42,7 +42,7 @@ public class FileController {
      * @author: JN
      * @date: 2026/1/5 16:50
      * @param: [param]
-     * @return: com.mok.securityframework.common.R<com.mok.securityframework.common.PageResult < com.mok.securityframework.entity.Role>>
+     * @return: com.mok.framework.common.R<com.mok.framework.common.PageResult < com.mok.framework.entity.Role>>
      **/
     @Operation(summary = "分页查询文件列表")
     @OperationLog(title = "分页查询文件", businessType = BusinessType.QUERY)

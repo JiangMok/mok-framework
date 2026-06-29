@@ -3,6 +3,8 @@
 # ============================================
 
 spring:
+  config:
+    import: optional:file:./env/dev-env.properties
   # 数据源配置 - 开发环境数据库
   datasource:
     dynamic:
@@ -13,7 +15,7 @@ spring:
 #          url: jdbc:mysql://192.168.5.22:3306/mbs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
           url: jdbc:mysql://192.168.77.152:3306/security_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
           username: root
-          password: 123456
+          password: ${spring.datasource.dynamic.datasource.master.password}
           driver-class-name: com.mysql.cj.jdbc.Driver
           hikari:
             max-lifetime: 300000
@@ -26,7 +28,7 @@ spring:
 #          url: jdbc:mysql://192.168.5.22:3306/mf_operation_log?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
           url: jdbc:mysql://192.168.77.152:3306/mf_operation_log?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
           username: root
-          password: 123456
+          password: ${spring.datasource.dynamic.datasource.operationLog.password}
           hikari:
             max-lifetime: 300000
             maximum-pool-size: 10
@@ -35,10 +37,10 @@ spring:
   # Redis配置 - 开发环境缓存
   data:
     redis:
-#      host: 192.168.5.22 # Redis服务器地址
+#      host: 192.168.5.22 # Redis服务器地址2
       host: 192.168.77.152 # Redis服务器地址
       port: 6379            # Redis端口号
-      password: 123456      # Redis访问密码
+      password: ${spring.data.redis.password}      # Redis访问密码
       database: 3           # Redis数据库索引（0-15）
       timeout: 3000ms       # 连接超时时间
       lettuce:
@@ -53,7 +55,7 @@ spring:
     host: 192.168.77.152             # RabbitMQ服务器地址（开发环境使用本地）
     port: 5672                 # RabbitMQ端口（默认5672）
     username: admin            # 用户名（默认guest）
-    password: 123456            # 密码（默认guest）
+    password: ${spring.elasticsearch.password}            # 密码（默认guest）
     virtual-host: /            # 虚拟主机（默认/）
 
     # 连接池配置
@@ -100,7 +102,7 @@ spring:
   # springAI 整合
   ai:
     openai:
-          api-key: sk-591e9eba85be48c1aa4fb1ee8da675d9   # 你的Key
+          api-key: ${spring.ai.openai.api-key}   # 你的Key
           base-url: https://api.deepseek.com/ # 如果用的是DeepSeek或代理地址
           chat:
             options:
@@ -128,7 +130,7 @@ sa-token:
   # 是否输出操作日志
   is-log: true
     # jwt秘钥
-  jwt-secret-key: asdasdasifhueuiwyurfewbfjsdafjk42564567845683245234768454fysfusdftdf
+  jwt-secret-key: ${sa-token.jwt-secret-key}
   token-session-check-login: true
 
 
@@ -136,7 +138,7 @@ sa-token:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true  # 开启驼峰命名自动转换
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 控制台打印SQL日志（调试用）
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl     # 使用 Slf4j 实现 (生产环境使用)
   global-config:
     db-config:
       logic-delete-field: isDeleted  # 逻辑删除字段名
@@ -177,12 +179,13 @@ springdoc:
 # 日志配置 - 开发环境详细日志
 logging:
   level:
-    com.mok.baseframe: DEBUG  # 应用包日志级别设为DEBUG
+    com.mok.framework: DEBUG  # 应用包日志级别设为DEBUG
     org.springframework.security: DEBUG  # Spring Security日志级别
     org.springframework.web: DEBUG       # Spring Web日志级别
     org.springframework.boot.autoconfigure: DEBUG
+    root: info
   file:
-    name: logs/security-framework.log  # 日志文件路径
+    name: logs/mok-framework.log  # 日志文件路径
     max-size: 10MB     # 单个日志文件最大大小
     max-history: 30    # 保留日志文件天数
 
@@ -235,6 +238,7 @@ operation-log:
 mok:
   ai:
     provider: deepseek        # 切换 openai 即可
-    api-key: sk-591e9eba85be48c1aa4fb1ee8da675d9  # 替换为真实 key
+    api-key: ${mok.ai.api-key}
+    # 替换为真实 key
     model: deepseek-v4-flash
     system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"

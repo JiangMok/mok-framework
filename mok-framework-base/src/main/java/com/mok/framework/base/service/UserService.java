@@ -19,7 +19,7 @@ public interface UserService extends IService<UserEntity> {
      * @author: JN
      * @date: 2026/1/6 10:40
      * @param: [param]
-     * @return: com.mok.securityframework.common.PageResult<com.mok.securityframework.entity.User>
+     * @return: com.mok.framework.common.PageResult<com.mok.framework.entity.User>
      **/
     PageResult<UserEntity> getPageList(PageParam param);
 
@@ -39,7 +39,7 @@ public interface UserService extends IService<UserEntity> {
      * @author: JN
      * @date: 2026/1/7
      * @param: [param, applyDataPermission 是否应用数据权限]
-     * @return: com.mok.securityframework.common.PageResult<com.mok.securityframework.entity.User>
+     * @return: com.mok.framework.common.PageResult<com.mok.framework.entity.User>
      **/
     PageResult<UserEntity> getPageListWithPermission(PageParam param, boolean applyDataPermission);
 

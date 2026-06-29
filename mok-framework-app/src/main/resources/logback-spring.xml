@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 引入 Spring Boot 默认的一些日志配置，如 CONSOLE_LOG_PATTERN 等 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!-- 从 application.yml 中读取属性，方便统一管理路径和级别 -->
+    <springProperty scope="context" name="LOG_PATH" source="logging.file.path" defaultValue="logs"/>
+    <springProperty scope="context" name="LOG_FILE" source="logging.file.name" defaultValue="logs/mok-framework.log"/>
+    <springProperty scope="context" name="ROOT_LEVEL" source="logging.level.root" defaultValue="INFO"/>
+
+    <!-- ========== 1. 普通日志文件（所有级别） ========== -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/mok-framework.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== 2. 错误日志分离（仅 ERROR 级别） ========== -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/mok-framework-error.log</file>
+        <!-- 过滤器：只接受 ERROR 级别 -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/mok-framework-error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== 3. 异步 Appender（提升性能） ========== -->
+    <!-- 异步包装普通文件日志 -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <!-- 异步包装错误文件日志 -->
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>256</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="ERROR_FILE"/>
+    </appender>
+
+    <!-- 也可以将控制台输出改为异步，但控制台实时性更重要，通常保持同步 -->
+
+    <!-- ========== 日志级别与输出绑定 ========== -->
+    <root level="${ROOT_LEVEL}">
+        <appender-ref ref="CONSOLE"/>        <!-- 控制台 -->
+        <appender-ref ref="ASYNC_FILE"/>     <!-- 异步普通日志 -->
+        <appender-ref ref="ASYNC_ERROR_FILE"/><!-- 异步错误日志 -->
+    </root>
+
+    <!-- 你可以在 application.yml 中继续覆盖具体包的级别，这里保持一致即可 -->
+    <!-- 例如：<logger name="com.mok.framework" level="DEBUG"/> 会继承 root 的 appender -->
+</configuration>

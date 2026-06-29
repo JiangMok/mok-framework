@@ -32,7 +32,7 @@ public interface PermissionService {
      * @author: JN
      * @date: 2026/1/5 17:19
      * @param: [id]
-     * @return: com.mok.securityframework.entity.Permission
+     * @return: com.mok.framework.entity.Permission
      **/
     PermissionEntity getById(String id);
 
@@ -51,7 +51,7 @@ public interface PermissionService {
      * @author: JN
      * @date: 2026/1/4 15:19
      * @param: []
-     * @return: java.util.List<com.mok.securityframework.entity.Permission>
+     * @return: java.util.List<com.mok.framework.entity.Permission>
      **/
     List<PermissionEntity> getAllPermission();
 
@@ -96,7 +96,7 @@ public interface PermissionService {
      * @author: JN
      * @date: 2026/1/5 14:29
      * @param: []
-     * @return: java.util.List<com.mok.securityframework.entity.Permission>
+     * @return: java.util.List<com.mok.framework.entity.Permission>
      **/
     List<PermissionEntity> getApiPermissions(String userId);
 
@@ -105,7 +105,7 @@ public interface PermissionService {
      * @author: JN
      * @date: 2026/1/5 14:30
      * @param: [type]
-     * @return: java.util.List<com.mok.securityframework.entity.Permission>
+     * @return: java.util.List<com.mok.framework.entity.Permission>
      **/
     List<PermissionEntity> selectPermissionsByUserIdByType(Integer type, String userId);
 
@@ -123,7 +123,7 @@ public interface PermissionService {
      * @author: JN
      * @date: 2026/1/19 16:27
      * @param: [roleId]
-     * @return: java.util.List<com.mok.baseframe.entity.PermissionEntity>
+     * @return: java.util.List<com.mok.framework.entity.PermissionEntity>
      **/
     List<PermissionEntity> selectPermissionsByRoleId(String roleId);
 }

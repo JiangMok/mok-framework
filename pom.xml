@@ -47,9 +47,6 @@
         <!-- 消息队列 -->
         <spring-rabbit.version>3.1.1</spring-rabbit.version>
 
-        <!-- 安全 -->
-        <jjwt.version>0.12.3</jjwt.version>
-
         <!-- 工具类 -->
         <hutool.version>5.8.42</hutool.version>
         <fastjson2.version>2.0.60</fastjson2.version>
@@ -112,25 +109,6 @@
                 <version>${spring-rabbit.version}</version>
             </dependency>
 
-
-            <!-- JWT -->
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-api</artifactId>
-                <version>${jjwt.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-impl</artifactId>
-                <version>${jjwt.version}</version>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-jackson</artifactId>
-                <version>${jjwt.version}</version>
-                <scope>runtime</scope>
-            </dependency>
 
             <!-- Hutool -->
             <dependency>

@@ -19,7 +19,7 @@ public interface OperationLogService {
      * @author: mok
      * @date: 2026/3/27 15:57
      * @param: []
-     * @return: java.lang.Iterable<com.mok.baseframe.es.entity.OperationLogEntity>
+     * @return: java.lang.Iterable<com.mok.framework.es.entity.OperationLogEntity>
      **/
     PageResult<OperationLogEntity> getPageList(PageParam param);
 
@@ -28,7 +28,7 @@ public interface OperationLogService {
      * @author: mok
      * @date: 2026/3/27 15:59
      * @param: []
-     * @return: com.mok.baseframe.es.entity.OperationLogEntity
+     * @return: com.mok.framework.es.entity.OperationLogEntity
      **/
     void saveOperationLog(OperationLogEntity operationLogEntity);
 
@@ -37,7 +37,7 @@ public interface OperationLogService {
      * @author: mok
      * @date: 2026/3/27 16:01
      * @param: [id]
-     * @return: com.mok.baseframe.es.entity.OperationLogEntity
+     * @return: com.mok.framework.es.entity.OperationLogEntity
      **/
     OperationLogEntity findById(String id);
 

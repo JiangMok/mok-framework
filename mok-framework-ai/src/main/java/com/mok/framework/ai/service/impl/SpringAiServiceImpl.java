@@ -3,7 +3,6 @@ package com.mok.framework.ai.service.impl;
 import com.mok.framework.ai.service.SpringAiService;
 import com.mok.framework.model.entity.SpringAiEntity;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
@@ -23,7 +22,6 @@ import java.util.List;
 @Service
 public class SpringAiServiceImpl implements SpringAiService {
 
-    private static final Logger log = LoggerFactory.getLogger(SpringAiServiceImpl.class);
     private final ChatClient chatClient;
     private final ChatMemoryRepository chatMemoryRepository;
     private final MessageChatMemoryAdvisor mesasgeChatMemoryAdvisor;

@@ -84,7 +84,7 @@ public class HealthCheckServiceImpl implements HealthCheckService {
                 && elasticsearchResult.isUp()
                 && rabbitmqResult.isUp();
         healthInfo.put("status", allHealthy ? "UP" : "DOWN");
-        healthInfo.put("application", "MOK-BaseFrame");
+        healthInfo.put("application", "MOK-Framework");
         healthInfo.put("version", "1.1.0");
 
         return healthInfo;

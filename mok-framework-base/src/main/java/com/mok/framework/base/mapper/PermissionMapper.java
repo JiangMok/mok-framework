@@ -21,7 +21,7 @@ public interface PermissionMapper extends BaseMapper<PermissionEntity> {
      * @author: JN
      * @date: 2026/1/2 13:29
      * @param: [userId]
-     * @return: java.util.List<com.mok.securityframework.entity.Permission>
+     * @return: java.util.List<com.mok.framework.entity.Permission>
      **/
     List<PermissionEntity> selectPermissionsByUserId(String userId);
 
@@ -30,7 +30,7 @@ public interface PermissionMapper extends BaseMapper<PermissionEntity> {
      * @author: JN
      * @date: 2026/1/12 19:30
      * @param: [type, userId]
-     * @return: java.util.List<com.mok.baseframe.entity.PermissionEntity>
+     * @return: java.util.List<com.mok.framework.entity.PermissionEntity>
      **/
     List<PermissionEntity> selectPermissionsByUserIdByType(@Param("userId")String userId,
                                                            @Param("type")Integer type);
@@ -40,7 +40,7 @@ public interface PermissionMapper extends BaseMapper<PermissionEntity> {
      * @author: JN
      * @date: 2026/1/2 13:39
      * @param: [userId]
-     * @return: java.util.List<com.mok.securityframework.entity.Permission>
+     * @return: java.util.List<com.mok.framework.entity.Permission>
      **/
     List<PermissionEntity> selectPermissionsByRoleId(String userId);
 
@@ -49,7 +49,7 @@ public interface PermissionMapper extends BaseMapper<PermissionEntity> {
      * @author: JN
      * @date: 2026/1/4 15:20
      * @param: []
-     * @return: java.util.List<com.mok.securityframework.entity.Permission>
+     * @return: java.util.List<com.mok.framework.entity.Permission>
      **/
     List<PermissionEntity> selectAllPermissions();
 

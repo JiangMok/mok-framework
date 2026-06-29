@@ -50,7 +50,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
      * @author: JN
      * @date: 2025/12/31 21:15
      * @param: [param]
-     * @return: com.mok.securityframework.common.PageResult<com.mok.securityframework.entity.User>
+     * @return: com.mok.framework.common.PageResult<com.mok.framework.entity.User>
      **/
     @Override
     public PageResult<UserEntity> getPageList(PageParam param) {

@@ -21,7 +21,7 @@ public interface RoleService extends IService<RoleEntity> {
      * @author: JN
      * @date: 2026/1/1 18:17
      * @param: [param]
-     * @return: com.mok.securityframework.common.PageResult<com.mok.securityframework.entity.Role>
+     * @return: com.mok.framework.common.PageResult<com.mok.framework.entity.Role>
      **/
     PageResult<RoleEntity> getPageList(PageParam param);
 
@@ -30,7 +30,7 @@ public interface RoleService extends IService<RoleEntity> {
      * @author: JN
      * @date: 2026/1/1 18:18
      * @param: []
-     * @return: java.util.List<com.mok.securityframework.entity.Role>
+     * @return: java.util.List<com.mok.framework.entity.Role>
      **/
     List<RoleEntity> getAllActiveRoles();
 
@@ -39,7 +39,7 @@ public interface RoleService extends IService<RoleEntity> {
      * @author: JN
      * @date: 2026/1/1 18:19
      * @param: [userId]
-     * @return: java.util.List<com.mok.securityframework.entity.Role>
+     * @return: java.util.List<com.mok.framework.entity.Role>
      **/
     List<RoleEntity> getRolesByUserId(String userId);
 
@@ -102,7 +102,7 @@ public interface RoleService extends IService<RoleEntity> {
      * @author: JN
      * @date: 2026/1/5 12:51
      * @param: [roleId]
-     * @return: java.util.List<com.mok.securityframework.entity.Permission>
+     * @return: java.util.List<com.mok.framework.entity.Permission>
      **/
     List<PermissionEntity> getRolePermissions(String roleId);
 

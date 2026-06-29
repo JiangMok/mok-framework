@@ -5,9 +5,9 @@ import com.alibaba.fastjson2.JSONArray; // JSON 数组
 import com.alibaba.fastjson2.JSONObject; // JSON 对象
 import com.mok.framework.ai.config.AiProperties; // AI 相关配置属性
 import com.mok.framework.ai.service.AIService; // AI 服务接口
+import com.mok.framework.common.utils.LogUtils;
 import okhttp3.*; // OkHttp 网络请求相关类
 import org.slf4j.Logger; // 日志接口
-import org.slf4j.LoggerFactory; // 日志工厂
 
 import java.io.BufferedReader; // 用于读取流
 import java.io.IOException; // IO 异常
@@ -16,7 +16,7 @@ import java.util.function.Consumer; // 消费者函数接口，用于接收流�
 
 public class DeepSeekAIService implements AIService { // 实现 AI 服务接口，对接 DeepSeek API
 
-    private static final Logger log = LoggerFactory.getLogger(DeepSeekAIService.class); // 日志记录器
+    private static final Logger log = LogUtils.getLogger(DeepSeekAIService.class); // 日志记录器
     private final AiProperties properties; // AI 配置，如 API 地址、密钥、模型等
     private final OkHttpClient client; // 复用 OkHttp 客户端，性能更好
     private Call currentCall; // 保存当前正在进行的网络请求，用于手动取消

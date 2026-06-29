@@ -18,7 +18,7 @@ public interface RoleMapper extends BaseMapper<RoleEntity> {
      * @author: JN
      * @date: 2026/1/2 12:44
      * @param: [UserId]
-     * @return: java.util.List<com.mok.securityframework.entity.Role>
+     * @return: java.util.List<com.mok.framework.entity.Role>
      **/
     List<RoleEntity> selectRolesByUserId(String UserId);
 }

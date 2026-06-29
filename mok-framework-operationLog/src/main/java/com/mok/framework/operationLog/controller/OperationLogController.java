@@ -46,7 +46,7 @@ public class OperationLogController {
      * @author: JN
      * @date: 2026/1/6 14:21
      * @param: [beforeDate]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "清理历史日志")
     @OperationLog(title = "清除历史日志", businessType = BusinessType.DELETE)
@@ -64,7 +64,7 @@ public class OperationLogController {
      * @author: mok
      * @date: 2026/3/29 15:26
      * @param: [id]
-     * @return: com.mok.baseframe.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "清理一条日志")
     @OperationLog(title = "清理一条日志", businessType = BusinessType.DELETE)

@@ -45,7 +45,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 09:57
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @ExceptionHandler(BusinessException.class)
     public R<String> handleBusinessException(BusinessException e,
@@ -69,7 +69,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:00
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @ExceptionHandler({MethodArgumentNotValidException.class})
     public R<String> handleMethodArgumentNotValidException(MethodArgumentNotValidException e,
@@ -92,7 +92,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:04
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
     **/
     @ExceptionHandler(BindException.class)
     public R<String> handleBindException(BindException e, HttpServletRequest request) {
@@ -135,7 +135,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:08
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
     **/
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public R<String> handleMissingServletRequestParameterException(
@@ -154,7 +154,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:10
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
     **/
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public R<String> handleMethodArgumentTypeMismatchException(
@@ -173,7 +173,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:15
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
     **/
     @ExceptionHandler(NotPermissionException.class)
     public R<String> handleNotPermissionException(NotPermissionException e,
@@ -189,7 +189,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:17
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
     **/
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public R<String> handleHttpRequestMethodNotSupportedException(
@@ -209,7 +209,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:19
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
     **/
     @ExceptionHandler(NoHandlerFoundException.class)
     //设置HTTP状态码为404
@@ -229,7 +229,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:28
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
     **/
     //SQLException 在数据库操作失败时抛出
     @ExceptionHandler(SQLException.class)
@@ -259,7 +259,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:30
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
     **/
     //Exception 处理所有未捕获的异常
     @ExceptionHandler(Exception.class)
@@ -282,7 +282,7 @@ public class GlobalExceptionHandler  {
      * @author: JN
      * @date: 2026/1/1 10:43
      * @param: [e, request]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
     **/
     //专门处理 RuntimeException 及其子类
     //注意:这个处理器的优先级高于 Exception.class 处理器

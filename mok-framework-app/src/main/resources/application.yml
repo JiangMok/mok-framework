@@ -1,7 +1,7 @@
 # Spring Boot应用主配置 - 控制加载哪个环境配置文件
 spring:
   application:
-    name: mok-baseframe-satoken
+    name: mok-framework
   servlet:
     multipart:
       max-file-size: 10MB
@@ -35,7 +35,7 @@ server:
 # 跨环境通用的日志配置
 logging:
   level:
-    com.mok.baseframe: debug  # 应用日志级别
+    com.mok.framework: debug  # 应用日志级别
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level [%thread] %logger{36} - %msg%n"  # 控制台日志格式
 # 应用自定义配置
@@ -72,4 +72,4 @@ captchaImpl:
 # 操作日志保存位置 接口位置:com.mok.framework.elasticsearch.service.OperationLogService
 operationlogImpl:
   save-location:
-    type: mysql
+    type: es

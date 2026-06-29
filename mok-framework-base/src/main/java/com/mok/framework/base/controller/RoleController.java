@@ -50,7 +50,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:50
      * @param: [param]
-     * @return: com.mok.securityframework.common.R<com.mok.securityframework.common.PageResult < com.mok.securityframework.entity.Role>>
+     * @return: com.mok.framework.common.R<com.mok.framework.common.PageResult < com.mok.framework.entity.Role>>
      **/
     @Operation(summary = "分页查询角色列表")
     @OperationLog(title = "分页查询角色", businessType = BusinessType.QUERY)
@@ -65,7 +65,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:50
      * @param: []
-     * @return: com.mok.securityframework.common.R<java.util.List < com.mok.securityframework.entity.Role>>
+     * @return: com.mok.framework.common.R<java.util.List < com.mok.framework.entity.Role>>
      **/
     @Operation(summary = "获取所有可用角色")
     @OperationLog(title = "获取所有可用角色", businessType = BusinessType.QUERY)
@@ -80,7 +80,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:50
      * @param: [id]
-     * @return: com.mok.securityframework.common.R<java.util.Map < java.lang.String, java.lang.Object>>
+     * @return: com.mok.framework.common.R<java.util.Map < java.lang.String, java.lang.Object>>
      **/
     @Operation(summary = "通过 id 获取角色详情")
     @OperationLog(title = "通过ID获取角色详情", businessType = BusinessType.QUERY)
@@ -112,7 +112,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:51
      * @param: [roleDTO]
-     * @return: com.mok.securityframework.common.R<java.lang.Long>
+     * @return: com.mok.framework.common.R<java.lang.Long>
      **/
     @Operation(summary = "创建角色")
     @OperationLog(title = "创建角色", businessType = BusinessType.INSERT)
@@ -130,7 +130,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:53
      * @param: [roleDTO]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "更新角色")
     @OperationLog(title = "更新角色", businessType = BusinessType.UPDATE)
@@ -148,7 +148,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:53
      * @param: [id]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "删除角色")
     @OperationLog(title = "删除角色", businessType = BusinessType.DELETE)
@@ -166,7 +166,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:55
      * @param: [id, status]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "修改角色状态")
     @OperationLog(title = "修改角色状态", businessType = BusinessType.DELETE)
@@ -202,7 +202,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:56
      * @param: []
-     * @return: com.mok.securityframework.common.R<java.util.List < java.util.Map < java.lang.String, java.lang.Object>>>
+     * @return: com.mok.framework.common.R<java.util.List < java.util.Map < java.lang.String, java.lang.Object>>>
      **/
     @Operation(summary = "获取权限树")
     @OperationLog(title = "获取权限树", businessType = BusinessType.QUERY)
@@ -218,7 +218,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:56
      * @param: [id, permissionIds]
-     * @return: com.mok.securityframework.common.R<java.lang.String>
+     * @return: com.mok.framework.common.R<java.lang.String>
      **/
     @Operation(summary = "分配角色权限")
     @OperationLog(title = "分配角色权限", businessType = BusinessType.INSERT)
@@ -236,7 +236,7 @@ public class RoleController {
      * @author: JN
      * @date: 2026/1/5 16:56
      * @param: [userId]
-     * @return: com.mok.securityframework.common.R<java.util.List < com.mok.securityframework.entity.Role>>
+     * @return: com.mok.framework.common.R<java.util.List < com.mok.framework.entity.Role>>
      **/
     @Operation(summary = "获取用户角色列表")
     @OperationLog(title = "获取用户角色列表", businessType = BusinessType.QUERY)
