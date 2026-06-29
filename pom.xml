@@ -34,6 +34,7 @@
         <module>mok-framework-file</module>
         <module>mok-framework-excel</module>
         <module>mok-framework-ai</module>
+        <module>mok-framework-mail</module>
     </modules>
 
     <properties>

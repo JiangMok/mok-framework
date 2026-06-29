@@ -1,17 +1,25 @@
 package com.mok.framework.mq.consumer;
 
+import com.alibaba.fastjson2.JSON;
+import com.mok.framework.model.entity.MqFailedMessage;
+import com.mok.framework.model.enums.MessageType;
+import com.mok.framework.mq.service.MqFailedMessageSaver;
+import com.mok.framework.mq.service.MqFailedMessageService;
+import com.mok.framework.mq.util.MqFailedMessageBuilder;
 import com.mok.framework.operationLog.service.OperationLogService;
 import com.mok.framework.model.dto.OperationLogMessage;
 import com.mok.framework.model.entity.OperationLogEntity;
-import com.mok.framework.mq.config.OperationLogMQConfig;
+import com.mok.framework.mq.config.queue.OperationLogMQConfig;
 import com.rabbitmq.client.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 
 /**
@@ -25,47 +33,75 @@ public class OperationLogConsumer {
     private static final Logger log = LoggerFactory.getLogger(OperationLogConsumer.class);
 
     private final OperationLogService operationLogService;
+    private final MqFailedMessageSaver mqFailedMessageSaver;
 
-    public OperationLogConsumer(OperationLogService operationLogService) {
+    public OperationLogConsumer(OperationLogService operationLogService,
+                                MqFailedMessageSaver mqFailedMessageSaver) {
         this.operationLogService = operationLogService;
+        this.mqFailedMessageSaver = mqFailedMessageSaver;
     }
 
     @RabbitListener(queues = OperationLogMQConfig.OPERATION_LOG_QUEUE)
-    public void handleOperationLog(OperationLogMessage message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
-        log.info("========== 接收到操作日志消息 : {}", message.getTitle());
+    public void handleOperationLog(OperationLogMessage message, Channel channel,
+                                   @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
+        final int MAX_RETRY = 3;
+        log.info("接收到操作日志消息: {}", message.getTitle());
+
+        OperationLogEntity logEntity = convertToEntity(message);
+        // 确保实体设置消息ID
+        logEntity.setId(message.getId());
+
         try {
-            if (operationLogService.findById(message.getId()) != null) {
-                // 确认已处理的消息
-                // 参数1: deliveryTag >>> 消息的投递标签/递送编号
-                // 参数2: boolean >>> 是否批量确认
-                //          false : (常用)仅确认当前这一条信息,（对应 deliveryTag 的这一条）
-                //          true : (!!!谨慎使用)批量确认,确认这条消息及以前的所有未确认的消息
+            // 1. 幂等性检查：查询已有日志
+            OperationLogEntity existLog = operationLogService.findById(message.getId());
+
+            // 2. 已成功处理（status=0），直接确认
+            if (existLog != null && Integer.valueOf(0).equals(existLog.getStatus())) {
                 channel.basicAck(deliveryTag, false);
-                log.info("========== 操作日志已存在，跳过处理: {}", message.getId());
+                log.info("操作日志已成功处理，跳过: {}", message.getId());
                 return;
             }
-            // 转换为操作日志实体
-            OperationLogEntity operationLogEntity = convertToEntity(message);
-            log.debug("========== 操作日志实体信息 : {}", operationLogEntity);
-            operationLogService.saveOperationLog(operationLogEntity);
-            // 手动确认消息
+
+            // 3. 失败重试次数判断
+            int currentRetry = (existLog != null && existLog.getRetryCount() != null) ? existLog.getRetryCount() : 0;
+            if (existLog != null && Integer.valueOf(1).equals(existLog.getStatus()) && currentRetry >= MAX_RETRY) {
+                log.warn("消息 {} 重试次数已达上限 {}，丢弃", message.getId(), MAX_RETRY);
+                channel.basicAck(deliveryTag, false);
+                return;
+            }
+
+            // 4. 业务处理：保存操作日志（成功）
+            logEntity.setStatus(0);
+            logEntity.setRetryCount(currentRetry);
+            saveOrUpdateLog(logEntity);
             channel.basicAck(deliveryTag, false);
-            log.info("========== 操作日志保存成功 : {}", message.getTitle());
+            log.info("操作日志保存成功: {}", message.getTitle());
 
         } catch (Exception e) {
-            log.error("========== 处理操作日志消息失败: {}", e.getMessage(), e);
+            log.error("处理操作日志失败: {}", e.getMessage(), e);
+            // 失败处理：status=1，重试次数+1
+            int retryCount = (logEntity.getRetryCount() == null ? 0 : logEntity.getRetryCount()) + 1;
+            logEntity.setStatus(1);
+            logEntity.setRetryCount(retryCount);
+            saveOrUpdateLog(logEntity);
+
             try {
-                // 手动拒绝消息
-                // 参数1: deliveryTag >>> 哪条消息
-                // 参数2: boolean >>> 拒绝一条还是一批   false:只拒绝当前这一条   true:拒绝当前及以前所有未确认的消息
-                // 参数3: boolean >>> 要不要塞回队列   false:消息不重新入队(被丢弃或者进入死信队列)   true:重新放回队列头部等待再次消费
-                channel.basicNack(deliveryTag, false, false);
-            } catch (Exception ex) {
-                log.error("========== 处理操作日志消息失败>>>拒绝消息并不重新入队: {}", ex.getMessage(), ex);
+                // 重新入队，触发重试
+                channel.basicNack(deliveryTag, false, true);
+            } catch (IOException ex) {
+                log.error("拒绝消息失败", ex);
             }
         }
+    }
 
-
+    /**
+     * 保存或更新操作日志（根据 messageId 判断）
+     */
+    private void saveOrUpdateLog(OperationLogEntity entity) {
+        OperationLogEntity existLog = operationLogService.findById(entity.getId());
+        if (existLog == null) {
+            operationLogService.saveOperationLog(entity);
+        }
     }
 
     /**
@@ -98,5 +134,22 @@ public class OperationLogConsumer {
         }
 
         return entity;
+    }
+
+
+    @RabbitListener(queues = OperationLogMQConfig.OPERATION_LOG_DLX_QUEUE)
+    public void handleDlxOperationLog(Message message,
+                                      Channel channel,
+                                      @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
+        mqFailedMessageSaver.saveAndAck(message, channel, deliveryTag,
+                MessageType.OPERATION_LOG,
+                "operation.log.dlx.queue",
+                (body, record) -> {
+                    OperationLogMessage opLog = JSON.parseObject(body, OperationLogMessage.class);
+                    record.setMessageId(opLog.getId());
+                    if (opLog.getOperTime() != null) {
+                        record.setOriginalTimestamp(opLog.getOperTime());
+                    }
+                });
     }
 }

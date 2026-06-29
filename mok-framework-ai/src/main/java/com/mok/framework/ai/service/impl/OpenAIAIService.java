@@ -20,6 +20,7 @@ public class OpenAIAIService implements AIService {
     @Override
     public void streamAnalysis(String prompt, Consumer<String> consumer) {
         log.info("========== 使用openAI");
+        throw new UnsupportedOperationException("========== OpenAI provider is not yet implemented");
     }
 
     @Override

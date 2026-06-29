@@ -9,47 +9,19 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>mok-framework-mq</artifactId>
+    <artifactId>mok-framework-mail</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
     <dependencies>
-
-        <!-- 只需要RabbitMQ相关依赖 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-operationLog</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-
         <dependency>
             <groupId>com.mok.framework</groupId>
             <artifactId>mok-framework-common</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-mail</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-
-        <!-- javax.mail -->
-        <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>javax.mail</artifactId>
-            <version>1.6.2</version>
-        </dependency>
-
     </dependencies>
 
 </project>
