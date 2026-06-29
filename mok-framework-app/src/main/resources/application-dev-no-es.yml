@@ -3,6 +3,12 @@
 # ============================================
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
   config:
     import: optional:file:./env/dev-env.properties
   # 数据源配置 - 开发环境数据库
@@ -60,9 +66,9 @@ spring:
       channel:
         size: 50               # 通道缓存大小
         checkout-timeout: 20000 # 获取通道超时时间
-#      connection:
-#        mode: CHANNEL          # 连接缓存模式
-#        size: 10               # 连接池大小
+    #      connection:
+    #        mode: CHANNEL          # 连接缓存模式
+    #        size: 10               # 连接池大小
 
     # 生产者配置（消息发送方）
     publisher-confirm-type: correlated  # 消息发送确认机制
@@ -90,20 +96,22 @@ spring:
           initial-interval: 3000       # 初始重试间隔（毫秒）
           max-interval: 10000          # 最大重试间隔（毫秒）
           multiplier: 2.0              # 重试间隔乘数
-#  elasticsearch:
-#    uris: http://192.168.5.22:9200
-##    uris: http://192.168.77.152:9200
-#    username: elastic
-#    password: 123456
-#  # springAI 整合
+  elasticsearch:
+    repositories:
+      enabled: false
+#      uris: http://192.168.5.22:9200
+#      username: elastic
+#      password: 123456
+
+  # springAI 整合
   ai:
     openai:
-          api-key: ${spring.ai.openai.api-key}   # 你的Key
-          base-url: https://api.deepseek.com/ # 如果用的是DeepSeek或代理地址
-          chat:
-            options:
-              model: deepseek-v4-flash
-              temperature: 0.7
+      api-key: ${spring.ai.openai.api-key}   # 你的Key
+      base-url: https://api.deepseek.com/ # 如果用的是DeepSeek或代理地址
+      chat:
+        options:
+          model: deepseek-v4-flash
+          temperature: 0.7
 
 ############## Sa-Token 配置 (文档: https://sa-token.cc) ##############
 sa-token:
@@ -125,7 +133,7 @@ sa-token:
   token-style: jwt
   # 是否输出操作日志
   is-log: true
-    # jwt秘钥
+  # jwt秘钥
   jwt-secret-key: ${sa-token.jwt-secret-key}
   token-session-check-login: true
 
@@ -178,7 +186,7 @@ logging:
     com.mok.framework: DEBUG  # 应用包日志级别设为DEBUG
     org.springframework.security: DEBUG  # Spring Security日志级别
     org.springframework.web: DEBUG       # Spring Web日志级别
-    org.springframework.boot.autoconfigure: DEBUG
+#    org.springframework.boot.autoconfigure: DEBUG
     root: info
   file:
     name: logs/mok-framework.log  # 日志文件路径

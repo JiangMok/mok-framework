@@ -1,7 +1,5 @@
 package com.mok.framework.monitor.service.impl;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.monitor.service.HealthCheckService;
 import org.slf4j.Logger;
@@ -31,19 +29,19 @@ public class HealthCheckServiceImpl implements HealthCheckService {
     private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
     private final RedisConnectionFactory redisConnectionFactory;
-    private final ElasticsearchClient elasticsearchClient;
+//    private final ElasticsearchClient elasticsearchClient;
     private final RabbitTemplate rabbitTemplate;
 
     public HealthCheckServiceImpl(DataSource dataSource,
                                   JdbcTemplate jdbcTemplate,
                                   RedisConnectionFactory redisConnectionFactory,
-                                  ElasticsearchClient elasticsearchClient,
+//                                  ElasticsearchClient elasticsearchClient,
                                   RabbitTemplate rabbitTemplate
     ) {
         this.dataSource = dataSource;
         this.jdbcTemplate = jdbcTemplate;
         this.redisConnectionFactory = redisConnectionFactory;
-        this.elasticsearchClient = elasticsearchClient;
+//        this.elasticsearchClient = elasticsearchClient;
         this.rabbitTemplate = rabbitTemplate;
     }
 
@@ -68,8 +66,8 @@ public class HealthCheckServiceImpl implements HealthCheckService {
         healthInfo.put("memory", memoryResult);
 
         // 检查ES数据库
-        HealthCheckResult elasticsearchResult = checkElasticsearch();
-        healthInfo.put("elasticsearch", elasticsearchResult);
+//        HealthCheckResult elasticsearchResult = checkElasticsearch();
+//        healthInfo.put("elasticsearch", elasticsearchResult);
 
         // 检查rabbitmq
         HealthCheckResult rabbitmqResult = checkRabbitMQ();
@@ -81,7 +79,7 @@ public class HealthCheckServiceImpl implements HealthCheckService {
 //                &&
         redisResult.isUp()
                 && memoryResult.isUp()
-                && elasticsearchResult.isUp()
+//                && elasticsearchResult.isUp()
                 && rabbitmqResult.isUp();
         healthInfo.put("status", allHealthy ? "UP" : "DOWN");
         healthInfo.put("application", "MOK-Framework");
@@ -201,41 +199,41 @@ public class HealthCheckServiceImpl implements HealthCheckService {
     /**
      * 检查 Elasticsearch 连接
      */
-    private HealthCheckResult checkElasticsearch() {
-        long startTime = System.currentTimeMillis();
-        try {
-            HealthResponse health = elasticsearchClient.cluster().health();
-            long responseTime = System.currentTimeMillis() - startTime;
-
-            Map<String, Object> details = new HashMap<>();
-            details.put("clusterName", health.clusterName());
-            details.put("status", health.status().jsonValue()); // green/yellow/red
-            details.put("responseTime", responseTime + "ms");
-            details.put("nodeCount", health.numberOfNodes());
-            details.put("dataNodeCount", health.numberOfDataNodes());
-
-            String healthStatus;
-            if ("green".equals(health.status().jsonValue())) {
-                healthStatus = "UP";
-            } else if ("yellow".equals(health.status().jsonValue())) {
-                healthStatus = "WARNING";
-            } else {
-                healthStatus = "DOWN";
-            }
-
-            return HealthCheckResult.builder()
-                    .status(healthStatus)
-                    .details(details)
-                    .build();
-
-        } catch (Exception e) {
-            log.error("Elasticsearch 健康检查失败", e);
-            return HealthCheckResult.builder()
-                    .status("DOWN")
-                    .details(Map.of("error", e.getMessage()))
-                    .build();
-        }
-    }
+//    private HealthCheckResult checkElasticsearch() {
+//        long startTime = System.currentTimeMillis();
+//        try {
+//            HealthResponse health = elasticsearchClient.cluster().health();
+//            long responseTime = System.currentTimeMillis() - startTime;
+//
+//            Map<String, Object> details = new HashMap<>();
+//            details.put("clusterName", health.clusterName());
+//            details.put("status", health.status().jsonValue()); // green/yellow/red
+//            details.put("responseTime", responseTime + "ms");
+//            details.put("nodeCount", health.numberOfNodes());
+//            details.put("dataNodeCount", health.numberOfDataNodes());
+//
+//            String healthStatus;
+//            if ("green".equals(health.status().jsonValue())) {
+//                healthStatus = "UP";
+//            } else if ("yellow".equals(health.status().jsonValue())) {
+//                healthStatus = "WARNING";
+//            } else {
+//                healthStatus = "DOWN";
+//            }
+//
+//            return HealthCheckResult.builder()
+//                    .status(healthStatus)
+//                    .details(details)
+//                    .build();
+//
+//        } catch (Exception e) {
+//            log.error("Elasticsearch 健康检查失败", e);
+//            return HealthCheckResult.builder()
+//                    .status("DOWN")
+//                    .details(Map.of("error", e.getMessage()))
+//                    .build();
+//        }
+//    }
 
     /**
      * 检查 RabbitMQ 连接

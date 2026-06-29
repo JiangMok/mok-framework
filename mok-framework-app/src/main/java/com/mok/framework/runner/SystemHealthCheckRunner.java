@@ -63,10 +63,10 @@ public class SystemHealthCheckRunner implements ApplicationRunner {
         message.setSubject("mok-framework-启动成功通知");
         message.setContent("系统启动检查成功 : \n" + emailContent);
         // 异步发送邮件
-//        rabbitTemplate.convertAndSend(
-//                "system.check.mail.exchange",
-//                "system.check.mail.routing",
-//                message);
+        rabbitTemplate.convertAndSend(
+                "system.check.mail.exchange",
+                "system.check.mail.routing",
+                message);
         log.info("========== SystemCheckMailMessage : {}",message.toString());
         log.info("========== \uD83D\uDD1A 执行健康装填检查 - 结束 ==========");
     }

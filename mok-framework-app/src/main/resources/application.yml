@@ -10,7 +10,7 @@ spring:
   # 激活的环境配置文件，默认使用dev环境
   # 可以通过启动参数修改：--spring.profiles.active=prod
   profiles:
-    active: dev
+    active: dev-no-es
   
   # 配置文件加载顺序：后面的会覆盖前面的
   # 1. application.yml（当前文件）
@@ -72,4 +72,4 @@ captchaImpl:
 # 操作日志保存位置 接口位置:com.mok.framework.elasticsearch.service.OperationLogService
 operationlogImpl:
   save-location:
-    type: es
+    type: mysql
