@@ -28,6 +28,8 @@ public class OperationLogMQConfig {
     // 操作日志-死信路由键
     public static final String OPERATION_LOG_DLX_ROUTING_KEY = "operation.log.dlx.routing";
 
+    public static final int OPERATION_LOG_MAX_RETRY = 3;
+
     /**
      * 创建操作日志队列
      */

@@ -44,7 +44,6 @@ public class OperationLogConsumer {
     @RabbitListener(queues = OperationLogMQConfig.OPERATION_LOG_QUEUE)
     public void handleOperationLog(OperationLogMessage message, Channel channel,
                                    @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
-        final int MAX_RETRY = 3;
         log.info("接收到操作日志消息: {}", message.getTitle());
 
         OperationLogEntity logEntity = convertToEntity(message);
@@ -64,8 +63,12 @@ public class OperationLogConsumer {
 
             // 3. 失败重试次数判断
             int currentRetry = (existLog != null && existLog.getRetryCount() != null) ? existLog.getRetryCount() : 0;
-            if (existLog != null && Integer.valueOf(1).equals(existLog.getStatus()) && currentRetry >= MAX_RETRY) {
-                log.warn("消息 {} 重试次数已达上限 {}，丢弃", message.getId(), MAX_RETRY);
+            if (existLog != null
+                    && Integer.valueOf(1).equals(existLog.getStatus())
+                    && currentRetry >= OperationLogMQConfig.OPERATION_LOG_MAX_RETRY) {
+                log.warn("消息 {} 重试次数已达上限 {}，丢弃",
+                        message.getId(),
+                        OperationLogMQConfig.OPERATION_LOG_MAX_RETRY);
                 channel.basicAck(deliveryTag, false);
                 return;
             }
