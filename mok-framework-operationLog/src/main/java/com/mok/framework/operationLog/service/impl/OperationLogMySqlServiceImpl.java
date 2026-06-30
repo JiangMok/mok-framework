@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
-import com.mok.framework.common.config.OperationLogConfig;
+import com.mok.framework.common.config.operationlog.OperationLogConfig;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.operationLog.mapper.OperationLogMapper;
 import com.mok.framework.operationLog.service.OperationLogService;

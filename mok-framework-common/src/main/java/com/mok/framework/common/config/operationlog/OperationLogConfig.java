@@ -1,4 +1,4 @@
-package com.mok.framework.common.config;
+package com.mok.framework.common.config.operationlog;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

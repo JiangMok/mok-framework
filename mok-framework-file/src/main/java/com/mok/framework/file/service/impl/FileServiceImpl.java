@@ -11,7 +11,7 @@ import com.mok.framework.common.FileUploadException;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.utils.LogUtils;
-import com.mok.framework.common.config.FileStorageConfig;
+import com.mok.framework.common.config.storage.FileStorageConfig;
 import com.mok.framework.file.mapper.FileMapper;
 import com.mok.framework.file.service.FileService;
 import com.mok.framework.model.dto.FileUploadResponse;

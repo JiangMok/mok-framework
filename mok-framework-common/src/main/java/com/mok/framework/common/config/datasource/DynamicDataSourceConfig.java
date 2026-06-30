@@ -1,4 +1,4 @@
-package com.mok.framework.common.config;
+package com.mok.framework.common.config.datasource;
 
 import com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-package com.mok.framework.common.config;
+package com.mok.framework.common.config.redis;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

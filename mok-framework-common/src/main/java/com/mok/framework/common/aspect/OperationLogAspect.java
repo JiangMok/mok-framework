@@ -5,7 +5,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.mok.framework.common.annotation.OperationLog;
-import com.mok.framework.common.config.OperationLogConfig;
+import com.mok.framework.common.config.operationlog.OperationLogConfig;
 import com.mok.framework.common.mapper.OperationLogUserMapper;
 import com.mok.framework.common.utils.JsonDesensitizationUtil;
 import com.mok.framework.common.utils.LogUtils;

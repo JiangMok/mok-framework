@@ -1,4 +1,4 @@
-package com.mok.framework.common.config;
+package com.mok.framework.common.config.datasource;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
