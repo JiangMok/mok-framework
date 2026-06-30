@@ -67,7 +67,7 @@ public class PreventDuplicateAspect {
             log.error("========== 防重复提交注解在解析SpEL表达式时出现异常,异常信息:{}", e.getMessage());
             throw new DuplicateSubmitException("防重复提交注解在解析SpEL表达式时出现异常");
         }
-        String lockKey = "user:" + resolvedKey + ":type:" + annotation.type();
+        String lockKey = "user:" + resolvedKey + ":type:" + annotation.type().getCode();
         String lockValue = UUID.randomUUID().toString();
         int timeout = annotation.lockTime();
         String message = annotation.message();

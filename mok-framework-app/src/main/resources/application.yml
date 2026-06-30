@@ -2,6 +2,7 @@
 spring:
   application:
     name: mok-framework
+    version: 1.0.0
   servlet:
     multipart:
       max-file-size: 10MB

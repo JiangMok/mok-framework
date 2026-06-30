@@ -1,4 +1,4 @@
-package com.mok.framework.common.config.mail;
+package com.mok.framework.mail.config;
 
 import cn.hutool.extra.mail.MailAccount;
 import org.springframework.context.annotation.Bean;

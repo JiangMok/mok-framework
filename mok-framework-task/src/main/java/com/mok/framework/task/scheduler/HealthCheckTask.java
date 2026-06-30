@@ -1,4 +1,4 @@
-package com.mok.framework.task;
+package com.mok.framework.task.scheduler;
 
 import cn.hutool.core.util.IdUtil;
 import com.mok.framework.common.utils.LogUtils;

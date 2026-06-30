@@ -20,7 +20,6 @@ ${AnsiColor.BRIGHT_MAGENTA}Spring Boot Version: ${spring-boot.version}${AnsiColo
 ${AnsiColor.BRIGHT_CYAN}Active Profile: ${spring.profiles.active}${AnsiColor.DEFAULT}
 ${AnsiColor.BRIGHT_GREEN}Server Port: ${server.port}${AnsiColor.DEFAULT}
 ${AnsiColor.BRIGHT_YELLOW}Context Path: ${server.servlet.context-path}${AnsiColor.DEFAULT}
-${AnsiColor.BRIGHT_BLUE}Startup Time: ${spring-boot.startup-date}${AnsiColor.DEFAULT}
 ${AnsiColor.BRIGHT_WHITE}Java Version: ${java.version}${AnsiColor.DEFAULT}
 ${AnsiColor.BRIGHT_CYAN}OS: ${os.name} ${os.version}${AnsiColor.DEFAULT}
 

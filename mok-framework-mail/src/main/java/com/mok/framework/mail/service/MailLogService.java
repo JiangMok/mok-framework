@@ -30,4 +30,13 @@ public interface MailLogService {
      * @return: void
     **/
     void updateById(MailLog mailLog);
+
+    /**
+     * @description:  保存或更新邮件日志（按 messageId 判断）
+     * @author: mok
+     * @date: 2026/6/30 13:52
+     * @param: [mailLog]
+     * @return: void
+    **/
+    void saveOrUpdateByMessageId(MailLog mailLog);
 }

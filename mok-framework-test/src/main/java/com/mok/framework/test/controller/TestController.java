@@ -8,6 +8,7 @@ import com.mok.framework.common.R;
 import com.mok.framework.common.annotation.OperationLog;
 import com.mok.framework.common.annotation.PreventDuplicate;
 import com.mok.framework.common.enums.BusinessType;
+import com.mok.framework.common.enums.PreventDuplicateType;
 import com.mok.framework.common.utils.LogUtils;
 import org.slf4j.Logger;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -63,7 +64,7 @@ public class TestController {
     @GetMapping("/testDistributedLock/{userId}/{type}")
     @PreventDuplicate(
             key = "#userId",
-            type = "30",
+            type = PreventDuplicateType.DEFAULT,
             lockTime = 5,
             message = "请勿重复提交")
     public R<String> testDistributedLock(@PathVariable String userId, @PathVariable String type) {

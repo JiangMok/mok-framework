@@ -1,6 +1,8 @@
 package com.mok.framework.common.annotation;
 
 
+import com.mok.framework.common.enums.PreventDuplicateType;
+
 import java.lang.annotation.*;
 
 //指定该注解只能用于方法上
@@ -19,9 +21,8 @@ public @interface PreventDuplicate {
 
     /**
      * 操作类型
-     * todo 可以升级为枚举类,当前只是测试
      */
-    String type() default "60";
+    PreventDuplicateType type() default PreventDuplicateType.DEFAULT;
 
     /**
      * 锁定的时间（秒）
