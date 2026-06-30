@@ -1,0 +1,211 @@
+# ================================================================
+#  生产环境配置 (application-prod.yml)
+#  使用前请务必替换所有占位符（${...}）为实际生产环境值
+# ================================================================
+
+spring:
+  config:
+    import: optional:file:/etc/mok-framework/application-prod-override.yml  # 可选的外部覆盖文件
+
+  # ================================================================
+  #  自动配置排除（若不需要 ES，保持排除）
+  # ================================================================
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
+
+  # ================================================================
+  #  生产数据库 — 动态多数据源
+  # ================================================================
+  datasource:
+    dynamic:
+      primary: master
+      strict: true   # 生产环境建议严格匹配，防止误操作
+      datasource:
+        master:
+          url: ${PROD_DB_MASTER_URL}   # 示例: jdbc:mysql://prod-mysql-host:3306/prod_db?useSSL=true&serverTimezone=Asia/Shanghai
+          username: ${PROD_DB_MASTER_USER}
+          password: ${PROD_DB_MASTER_PASSWORD}
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          hikari:
+            max-lifetime: 1800000       # 30分钟
+            maximum-pool-size: 50       # 根据实际并发调整
+            minimum-idle: 10
+            connection-timeout: 30000
+            idle-timeout: 600000
+        operationLog:
+          url: ${PROD_DB_OPERATION_LOG_URL}   # 示例: jdbc:mysql://prod-mysql-host:3306/prod_operation_log?useSSL=true&serverTimezone=Asia/Shanghai
+          username: ${PROD_DB_OPERATION_LOG_USER}
+          password: ${PROD_DB_OPERATION_LOG_PASSWORD}
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          hikari:
+            max-lifetime: 1800000
+            maximum-pool-size: 20
+            minimum-idle: 5
+            connection-timeout: 30000
+            idle-timeout: 600000
+
+  # ================================================================
+  #  生产 Redis — 哨兵/集群请调整配置
+  # ================================================================
+  data:
+    redis:
+      host: ${PROD_REDIS_HOST}         # 生产 Redis 地址
+      port: ${PROD_REDIS_PORT:6379}
+      password: ${PROD_REDIS_PASSWORD}
+      database: 0                      # 生产环境建议使用默认库或规划好的库
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 100              # 适当增大连接池
+          max-wait: -1ms
+          max-idle: 20
+          min-idle: 5
+
+  # ================================================================
+  #  生产 RabbitMQ
+  # ================================================================
+  rabbitmq:
+    host: ${PROD_RABBITMQ_HOST}
+    port: ${PROD_RABBITMQ_PORT:5672}
+    username: ${PROD_RABBITMQ_USER}
+    password: ${PROD_RABBITMQ_PASSWORD}
+    virtual-host: ${PROD_RABBITMQ_VHOST:/}
+    connection-timeout: 30000
+    requested-heartbeat: 60           # 心跳保活
+    cache:
+      channel:
+        size: 100
+        checkout-timeout: 20000
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+      retry:
+        enabled: true
+        max-attempts: 3
+        initial-interval: 1000
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 5                 # 生产环境适当增加消费者
+        max-concurrency: 10
+        prefetch: 10
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 3000
+          max-interval: 10000
+          multiplier: 2.0
+
+  # ================================================================
+  #  Spring AI（生产环境使用自己的 API Key）
+  # ================================================================
+  ai:
+    openai:
+      api-key: ${PROD_AI_API_KEY}
+      base-url: ${PROD_AI_BASE_URL:https://api.deepseek.com/}
+      chat:
+        options:
+          model: ${PROD_AI_MODEL:deepseek-v4-flash}
+          temperature: 0.7
+
+# ================================================================
+#  Sa-Token 生产环境配置
+# ================================================================
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: 7200                     # 2小时，根据业务调整
+  is-read-cookie: false
+  active-timeout: 1800              # 30分钟无操作冻结
+  is-concurrent: true
+  is-share: false
+  token-style: jwt
+  is-log: false                     # 关闭操作日志，减少开销
+  jwt-secret-key: ${PROD_SA_TOKEN_JWT_SECRET}   # 生产环境必须使用强随机密钥
+  token-session-check-login: true
+
+# ================================================================
+#  MyBatis-Plus 生产配置（关闭 SQL 日志）
+# ================================================================
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl   # 生产环境不输出 SQL 日志
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:/mapper/*.xml
+  type-aliases-package: com.mok.framework.*.entity
+
+# ================================================================
+#  API 文档 — 生产环境建议关闭
+# ================================================================
+springdoc:
+  api-docs:
+    enabled: false                   # 关闭 OpenAPI 端点
+  swagger-ui:
+    enabled: false                   # 关闭 Swagger UI
+
+# ================================================================
+#  日志策略 — 生产环境减少日志量
+# ================================================================
+logging:
+  level:
+    com.mok.framework: WARN          # 仅记录警告和错误
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+    root: WARN
+  file:
+    name: /var/log/mok-framework/application.log   # 生产日志路径
+    max-size: 100MB
+    max-history: 90                 # 保留3个月
+
+# ================================================================
+#  操作日志配置
+# ================================================================
+operation-log:
+  enabled: true
+  record-get: false                 # 生产环境通常不记录 GET 请求，减少日志量
+  max-content-length: 500           # 限制内容长度，节省存储
+
+# ================================================================
+#  邮件服务（生产环境 SMTP）
+# ================================================================
+mail:
+  host: ${PROD_MAIL_HOST}
+  port: ${PROD_MAIL_PORT:465}
+  ssl-enable: true
+  starttls-enable: false
+  from: ${PROD_MAIL_FROM}
+  user: ${PROD_MAIL_USER}
+  password: ${PROD_MAIL_PASSWORD}
+
+# ================================================================
+#  自定义 AI 配置
+# ================================================================
+mok:
+  ai:
+    provider: ${PROD_AI_PROVIDER:deepseek}
+    api-key: ${PROD_AI_API_KEY}     # 与 spring.ai.openai.api-key 保持一致或独立
+    model: ${PROD_AI_MODEL:deepseek-v4-flash}
+    system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"
+
+# ================================================================
+#  服务器端口建议通过环境变量 SERVER_PORT 覆盖，此处默认
+# ================================================================
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+  tomcat:
+    uri-encoding: UTF-8
+    max-threads: 500                # 生产环境提升线程数
+    min-spare-threads: 50
