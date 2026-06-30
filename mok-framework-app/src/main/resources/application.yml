@@ -1,47 +1,60 @@
-# Spring Boot应用主配置 - 控制加载哪个环境配置文件
+# ================================================================
+#  [1] Spring 框架核心与应用元数据
+# ================================================================
 spring:
   application:
     name: mok-framework
     version: 1.0.0
+
+  # ------------------------------------
+  #  激活的环境 Profile（dev-no-es / prod）
+  # ------------------------------------
+  profiles:
+    active: dev-no-es
+
+  # ------------------------------------
+  #  外部配置文件导入顺序
+  # ------------------------------------
+  config:
+    import:
+      - optional:classpath:application-${spring.profiles.active}.yml
+      - optional:file:./config/
+      - optional:file:/etc/mok-framework/
+
+  # ------------------------------------
+  #  文件上传大小限制
+  # ------------------------------------
   servlet:
     multipart:
       max-file-size: 10MB
-      max-request-size: 100MB # 应用名称，用于服务发现和监控
-  
-  # 激活的环境配置文件，默认使用dev环境
-  # 可以通过启动参数修改：--spring.profiles.active=prod
-  profiles:
-    active: dev-no-es
-  
-  # 配置文件加载顺序：后面的会覆盖前面的
-  # 1. application.yml（当前文件）
-  # 2. application-{profile}.yml（根据active加载）
-  # 3. 外部配置文件（优先级最高）
-  config:
-    import:
-      - optional:classpath:application-${spring.profiles.active}.yml  # 加载环境特定配置
-      - optional:file:./config/  # 加载外部配置文件目录
-      - optional:file:/etc/mok-framework/  # 加载系统级配置文件
+      max-request-size: 100MB
 
-# 服务器基础配置
+# ================================================================
+#  [2] 内嵌 Tomcat 服务器配置
+# ================================================================
 server:
-  port: 8080            # 服务器端口
+  port: 8080
   servlet:
-    context-path: /api  # 应用上下文路径，所有API的根路径
+    context-path: /api
   tomcat:
-    uri-encoding: UTF-8  # URI编码格式
-    max-threads: 200    # 最大线程数
-    min-spare-threads: 10  # 最小空闲线程数
+    uri-encoding: UTF-8
+    max-threads: 200
+    min-spare-threads: 10
 
-# 跨环境通用的日志配置
+# ================================================================
+#  [3] 全局日志格式（与环境无关）
+# ================================================================
 logging:
   level:
-    com.mok.framework: debug  # 应用日志级别
+    com.mok.framework: debug
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level [%thread] %logger{36} - %msg%n"  # 控制台日志格式
-# 应用自定义配置
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level [%thread] %logger{36} - %msg%n"
+
+# ================================================================
+#  [4] 业务安全与文件存储通用配置
+# ================================================================
 system:
-  sensitive-fields:  # 需要脱敏处理的字段列表
+  sensitive-fields:   # 全局敏感字段，用于日志脱敏
     - password
     - pwd
     - confirmPassword
@@ -51,12 +64,11 @@ system:
     - secret
     - apiKey
 
-# 文件存储配置
 file:
   storage:
-    base-path: ${user.home}/mok-uploads  # 存储的物理路径
-    url-prefix: /api/uploads            # 注意：这里要加上 /api 前缀
-    base-url: http://localhost:8080     # 新增：基础URL
+    base-path: ${user.home}/mok-uploads
+    url-prefix: /api/uploads
+    base-url: http://localhost:8080
     allowed-types:
       - image/jpeg
       - image/png
@@ -64,13 +76,26 @@ file:
       - application/pdf
       - application/msword
       - application/vnd.openxmlformats-officedocument.wordprocessingml.document
-############ 系统动态配置 #############################################################################
-# 配置验证码生成验证的实现类 接口位置:com.mok.framework.captcha.service.CaptchaService
+
+# ================================================================
+#  [5] 系统动态配置（策略接口实现选择）
+# ================================================================
+# 验证码实现策略：接口 com.mok.framework.captcha.service.CaptchaService
 captchaImpl:
   generate:
-    type: mok-framework
+    type: hutool   # 可选: mok-framework / hutool
 
-# 操作日志保存位置 接口位置:com.mok.framework.elasticsearch.service.OperationLogService
+# 操作日志存储策略：接口 com.mok.framework.operationLog.service.OperationLogService
 operationlogImpl:
   save-location:
-    type: mysql
+    type: mysql    # 可选: mysql / elasticsearch
+
+# ================================================================
+#  [6] 验证码业务参数（Hutool 实现时仅生效width和height）
+# ================================================================
+captcha:
+  width: 120
+  height: 40
+  length: 4        # 当 type = math 时，此参数无效
+  expire: 300
+  type: char       # math / char

@@ -2,7 +2,9 @@ package com.mok.framework.captcha.service.impl;
 
 import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.captcha.ShearCaptcha;
+import cn.hutool.captcha.generator.MathGenerator;
 import cn.hutool.core.util.IdUtil;
+import com.mok.framework.captcha.config.CaptchaConfig;
 import com.mok.framework.captcha.service.CaptchaService;
 import com.mok.framework.common.utils.LogUtils;
 import org.slf4j.Logger;
@@ -27,21 +29,30 @@ public class CaptchaHutoolServiceImpl implements CaptchaService {
     private static final long CAPTCHA_EXPIRE_SECONDS = 300; // 5分钟
 
     private final StringRedisTemplate redisTemplate;
+    private final CaptchaConfig captchaConfig;
 
-    public CaptchaHutoolServiceImpl(StringRedisTemplate redisTemplate) {
+    public CaptchaHutoolServiceImpl(StringRedisTemplate redisTemplate,
+                                    CaptchaConfig captchaConfig) {
         this.redisTemplate = redisTemplate;
+        this.captchaConfig = captchaConfig;
     }
 
     @Override
     public Map<String, Object> generateCaptcha() {
-        // 1. 生成验证码图片（Hutool 扭曲干扰验证码）
-        // 参数：宽度，高度，验证码字符数，干扰线厚度
-        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(150, 40, 4, 4);
-        // 获取验证码文本（全小写，便于校验忽略大小写）
-        String code = captcha.getCode();
-        // 获取验证码图片的 Base64 格式（可直接用于前端 <img src="data:image/png;base64,...">）
+        ShearCaptcha captcha;
+        if("math".equals(captchaConfig.getType())){
+            captcha = CaptchaUtil.createShearCaptcha(
+                    captchaConfig.getWidth(),
+                    captchaConfig.getHeight());
+            // 获取验证码文本（全小写，便于校验忽略大小写）
+            captcha.setGenerator(new MathGenerator(1));
+        }else{
+            captcha = CaptchaUtil.createShearCaptcha(
+                captchaConfig.getWidth(),
+                captchaConfig.getHeight(), 4, 4);
+        }
         String imageBase64 = captcha.getImageBase64Data();
-
+        String code = captcha.getCode();
         // 2. 生成唯一标识 key（用于前端请求校验时携带）
         String key = "captcha-key_" + IdUtil.simpleUUID();
 
