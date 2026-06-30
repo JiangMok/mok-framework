@@ -246,3 +246,13 @@ mok:
     # 替换为真实 key
     model: deepseek-v4-flash
     system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"
+
+# HuTool 工具箱邮件配置
+mail:
+  host: smtp.163.com
+  port: 465
+  ssl-enable: true
+  starttls-enable: false
+  from: sms2meservicemail@163.com
+  user: sms2meservicemail@163.com
+  password: ${mail.password}   # 敏感信息占位，实际值在 dev-env.properties

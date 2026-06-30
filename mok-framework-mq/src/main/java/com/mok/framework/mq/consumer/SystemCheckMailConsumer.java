@@ -1,5 +1,6 @@
 package com.mok.framework.mq.consumer;
 
+import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
 import com.alibaba.fastjson2.JSON;
 import com.mok.framework.common.utils.LogUtils;
@@ -32,11 +33,14 @@ public class SystemCheckMailConsumer {
 
     private final MailLogService mailLogService;
     private final MqFailedMessageSaver mqFailedMessageSaver;
+    private final MailAccount mailAccount;
 
     public SystemCheckMailConsumer(MailLogService mailLogService,
-                                   MqFailedMessageSaver mqFailedMessageSaver){
+                                   MqFailedMessageSaver mqFailedMessageSaver,
+                                   MailAccount mailAccount){
         this.mailLogService=mailLogService;
         this.mqFailedMessageSaver=mqFailedMessageSaver;
+        this.mailAccount=mailAccount;
     }
 
     /**
@@ -81,7 +85,7 @@ public class SystemCheckMailConsumer {
             }
 
             // 4. 发送邮件
-            MailUtil.send(msg.getRecipient(), msg.getSubject(), msg.getContent(), false);
+            MailUtil.send(mailAccount,msg.getRecipient(), msg.getSubject(), msg.getContent(), false);
 
             // 5. 记录成功（更新已有记录或新增）
             saveMailLog(logEntity, "SUCCESS", null, currentRetryCount);
