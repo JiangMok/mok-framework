@@ -12,7 +12,7 @@
 
     <select id="getByUsername" resultType="com.mok.framework.model.entity.UserEntity">
         SELECT *
-        FROM `mbs`.`sys_user`
+        FROM `sys_user`
         WHERE `username` = #{username}
     </select>
 
