@@ -40,3 +40,5 @@ application-prod.yml
 !application-example.yml
 
 /env/dev-env.properties
+
+/logs
