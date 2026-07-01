@@ -2,6 +2,7 @@ package com.mok.framework.ai.controller;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import com.mok.framework.ai.service.AIService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,21 +12,20 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Executor;
 
 @RestController // 标识为 REST 控制器
 @RequestMapping("/ai") // 设置基础请求路径 /ai
 public class AiAnalysisController {
 
     private final AIService aiService; // 注入 AI 服务，用于实际的流式分析
+    private final Executor executor;   // Spring 管理的线程池，替代 CachedThreadPool
 
-    public AiAnalysisController(AIService aiService) { // 构造器注入
+    public AiAnalysisController(AIService aiService,
+                                @Qualifier("aiAnalysisExecutor") Executor executor) { // 构造器注入
         this.aiService = aiService;
+        this.executor = executor;
     }
-
-    // 使用线程池执行异步任务，避免阻塞主线程
-    private final ExecutorService executor = Executors.newCachedThreadPool();
 
     @SaIgnore // Sa-Token 权限校验忽略此接口
     @PostMapping(value = "/analysis", produces = MediaType.TEXT_EVENT_STREAM_VALUE) // 接收 POST 请求，响应为 SSE 事件流

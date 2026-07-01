@@ -24,8 +24,6 @@ import org.springframework.context.annotation.Import;
 
  */
 @Configuration
-// 排除默认的数据源自动配置
-@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 // 引入动态数据源自动配置
 @Import(DynamicDataSourceAutoConfiguration.class)
 public class DynamicDataSourceConfig {
