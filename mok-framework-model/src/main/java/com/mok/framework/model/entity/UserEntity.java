@@ -36,6 +36,13 @@ public class UserEntity implements Serializable  {
     @TableField("email")
     private String email;
 
+    @TableField("dept_id")
+    private String deptId;
+
+    /** 部门名称（非数据库字段，列表查询时填充） */
+    @TableField(exist = false)
+    private String deptName;
+
     @TableField("avatar")
     private String avatar;
 
@@ -60,7 +67,7 @@ public class UserEntity implements Serializable  {
     }
 
     public UserEntity(String id, String username, String password, String nickname,
-                      String phone, String email, String avatar, String createBy,
+                      String phone, String email, String deptId, String avatar, String createBy,
                       Integer status, Integer isDeleted, LocalDateTime createTime,
                       LocalDateTime updateTime) {
         this.id = id;
@@ -69,6 +76,7 @@ public class UserEntity implements Serializable  {
         this.nickname = nickname;
         this.phone = phone;
         this.email = email;
+        this.deptId = deptId;
         this.avatar = avatar;
         this.createBy = createBy;
         this.status = status;
@@ -131,6 +139,18 @@ public class UserEntity implements Serializable  {
         this.email = email;
         return this;
     }
+
+    public String getDeptId() {
+        return deptId;
+    }
+
+    public UserEntity setDeptId(String deptId) {
+        this.deptId = deptId;
+        return this;
+    }
+
+    public String getDeptName() { return deptName; }
+    public UserEntity setDeptName(String deptName) { this.deptName = deptName; return this; }
 
     public String getAvatar() {
         return avatar;
@@ -202,6 +222,7 @@ public class UserEntity implements Serializable  {
                 Objects.equals(nickname, that.nickname) &&
                 Objects.equals(phone, that.phone) &&
                 Objects.equals(email, that.email) &&
+                Objects.equals(deptId, that.deptId) &&
                 Objects.equals(avatar, that.avatar) &&
                 Objects.equals(createBy, that.createBy) &&
                 Objects.equals(status, that.status) &&
@@ -213,7 +234,7 @@ public class UserEntity implements Serializable  {
     // hashCode 方法
     @Override
     public int hashCode() {
-        return Objects.hash(id, username, password, nickname, phone, email, avatar,
+        return Objects.hash(id, username, password, nickname, phone, email, deptId, avatar,
                 createBy, status, isDeleted, createTime, updateTime);
     }
 
@@ -227,6 +248,7 @@ public class UserEntity implements Serializable  {
                 ", nickname='" + nickname + '\'' +
                 ", phone='" + phone + '\'' +
                 ", email='" + email + '\'' +
+                ", deptId='" + deptId + '\'' +
                 ", avatar='" + avatar + '\'' +
                 ", createBy='" + createBy + '\'' +
                 ", status=" + status +
@@ -248,6 +270,7 @@ public class UserEntity implements Serializable  {
         private String nickname;
         private String phone;
         private String email;
+        private String deptId;
         private String avatar;
         private String createBy;
         private Integer status;
@@ -285,6 +308,11 @@ public class UserEntity implements Serializable  {
             return this;
         }
 
+        public Builder deptId(String deptId) {
+            this.deptId = deptId;
+            return this;
+        }
+
         public Builder avatar(String avatar) {
             this.avatar = avatar;
             return this;
@@ -317,7 +345,7 @@ public class UserEntity implements Serializable  {
 
         public UserEntity build() {
             return new UserEntity(id, username, password, nickname, phone, email,
-                    avatar, createBy, status, isDeleted, createTime, updateTime);
+                    deptId, avatar, createBy, status, isDeleted, createTime, updateTime);
         }
     }
 }

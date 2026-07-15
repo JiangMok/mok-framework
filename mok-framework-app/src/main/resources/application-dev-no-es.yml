@@ -32,7 +32,7 @@ spring:
       datasource:
         # 主数据源（业务库）
         master:
-          url: jdbc:mysql://localhost:3306/mf_master_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+          url: jdbc:mysql://${master.mysql.host}:${master.mysql.port}/mf_master_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
           username: root
           password: ${spring.datasource.dynamic.datasource.master.password}
           driver-class-name: com.mysql.cj.jdbc.Driver
@@ -44,7 +44,7 @@ spring:
         # 操作日志数据源
         operationLog:
           driver-class-name: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://localhost:3306/mf_operation_log_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+          url: jdbc:mysql://${operationLog.mysql.host}:${operationLog.mysql.port}/mf_operation_log_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
           username: root
           password: ${spring.datasource.dynamic.datasource.operationLog.password}
           hikari:
@@ -58,7 +58,7 @@ spring:
   # ================================================================
   data:
     redis:
-      host: localhost       # Redis服务器地址
+      host: 172.16.3.17        # Redis服务器地址
       port: 6379            # Redis端口号
       password: ${spring.data.redis.password}      # Redis访问密码
       database: 3           # Redis数据库索引（0-15）
@@ -75,7 +75,7 @@ spring:
   # ================================================================
   rabbitmq:
     # 基础连接配置
-    host: localhost             # RabbitMQ服务器地址（开发环境使用本地）
+    host: ${spring.rabbitmq.host}              # RabbitMQ服务器地址（开发环境使用本地）
     port: 5672                  # RabbitMQ端口（默认5672）
     username: admin             # 用户名（默认guest）
     password: ${spring.rabbitmq.password}            # 密码（默认guest）

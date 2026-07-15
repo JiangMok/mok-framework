@@ -88,7 +88,7 @@ captchaImpl:
 # 操作日志存储策略：接口 com.mok.framework.operationLog.service.OperationLogService
 operationlogImpl:
   save-location:
-    type: mysql    # 可选: mysql / elasticsearch
+    type: mysql    # 可选: mysql / es
 
 # ================================================================
 #  [6] 验证码业务参数（Hutool 实现时仅生效width和height）

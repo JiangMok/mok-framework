@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mok.framework.base.mapper.UserMapper;
 import com.mok.framework.base.mapper.UserRoleMapper;
+import com.mok.framework.base.service.DepartmentService;
 import com.mok.framework.base.service.PermissionService;
 import com.mok.framework.base.service.RoleService;
 import com.mok.framework.base.service.UserService;
@@ -20,8 +21,8 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @description:
@@ -35,13 +36,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
 
     private final PermissionService permissionService;
     private final RoleService roleService;
+    private final DepartmentService departmentService;
     private final UserMapper userMapper;
 
     public UserServiceImpl(PermissionService permissionService,
                            UserRoleMapper userRoleMapper, RoleService roleService,
-                           UserMapper userMapper) {
+                           DepartmentService departmentService, UserMapper userMapper) {
         this.permissionService = permissionService;
         this.roleService = roleService;
+        this.departmentService = departmentService;
         this.userMapper = userMapper;
     }
 
@@ -107,14 +110,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         if (param.getStatus() != null) {
             wrapper.eq(UserEntity::getStatus, param.getStatus());
         }
+        // 部门筛选：传某个部门ID时，自动展开为子树部门ID列表
+        if (param.get("deptId") != null && !"".equals(param.get("deptId"))) {
+            String filterDeptId = param.get("deptId").toString();
+            List<String> scopeIds = departmentService.getDeptScopeIds(currentUserEntity.getId());
+            // 只在当前用户可看的范围内筛选
+            if (scopeIds.contains(filterDeptId)) {
+                // 获取该部门的子树ID列表
+                List<String> subtreeIds = getSubtreeDeptIds(filterDeptId);
+                wrapper.in(UserEntity::getDeptId, subtreeIds);
+            }
+        }
         wrapper.orderByDesc(UserEntity::getCreateTime);
-        //执行分页查询
-        //  baseMapper.selectPage : 调用父类的的BaseMapper来执行分页查询
-        //  参数1: page分页对象,里面包含分页的具体数据
-        //  参数2: wrapper 条件查询包装器
         IPage<UserEntity> result = baseMapper.selectPage(page, wrapper);
-        //将 Mybatis Plus 的分页结果转换为自定义的分页结果
-        //  PageResult.fromIPage() : 静态方法,将IPage转换为P阿哥Result
+
+        // 填充部门名称
+        fillDeptNames(result.getRecords());
+
         return PageResult.fromIPage(result);
     }
 
@@ -237,6 +249,45 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         List<RoleEntity> roleList = roleService.getRolesByUserId(user.getId());
         return roleList.stream()
                 .anyMatch(role -> "ROLE_ADMIN".equals(role.getRoleCode()));
+    }
+
+    /**
+     * 填充用户列表的部门名称
+     */
+    private void fillDeptNames(List<UserEntity> users) {
+        Set<String> deptIds = users.stream()
+                .map(UserEntity::getDeptId)
+                .filter(Objects::nonNull)
+                .filter(id -> !id.isEmpty())
+                .collect(Collectors.toSet());
+        if (deptIds.isEmpty()) return;
+
+        Map<String, String> nameMap = departmentService.getDeptNameMap(deptIds);
+        for (UserEntity user : users) {
+            if (user.getDeptId() != null) {
+                user.setDeptName(nameMap.getOrDefault(user.getDeptId(), ""));
+            }
+        }
+    }
+
+    /**
+     * 获取指定部门及其所有子部门的ID列表
+     */
+    private List<String> getSubtreeDeptIds(String deptId) {
+        com.mok.framework.model.entity.DepartmentEntity dept = departmentService.getDeptById(deptId);
+        if (dept == null) return List.of(deptId);
+        String prefix = dept.getAncestors() + "," + dept.getId();
+        List<com.mok.framework.model.entity.DepartmentEntity> allDepts = departmentService.lambdaQuery()
+                .eq(com.mok.framework.model.entity.DepartmentEntity::getIsDeleted, 0)
+                .list();
+        List<String> ids = new ArrayList<>();
+        ids.add(deptId);
+        for (com.mok.framework.model.entity.DepartmentEntity d : allDepts) {
+            if (d.getAncestors().startsWith(prefix)) {
+                ids.add(d.getId());
+            }
+        }
+        return ids;
     }
 
 }

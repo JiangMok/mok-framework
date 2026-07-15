@@ -42,6 +42,8 @@ public class UserDTO implements Serializable  {
 
     private Integer status = 1;
 
+    private String deptId;
+
     private List<String> roleIds;
 
     // 默认构造函数
@@ -50,7 +52,8 @@ public class UserDTO implements Serializable  {
 
     // 全参数构造函数（可选）
     public UserDTO(String id, String nickname, String password, String username,
-                   String phone, String email, String avatar, Integer status, List<String> roleIds) {
+                   String phone, String email, String avatar, Integer status,
+                   String deptId, List<String> roleIds) {
         this.id = id;
         this.nickname = nickname;
         this.password = password;
@@ -59,6 +62,7 @@ public class UserDTO implements Serializable  {
         this.email = email;
         this.avatar = avatar;
         this.status = status != null ? status : 1;
+        this.deptId = deptId;
         this.roleIds = roleIds;
     }
 
@@ -127,6 +131,9 @@ public class UserDTO implements Serializable  {
         this.status = status != null ? status : 1;
     }
 
+    public String getDeptId() { return deptId; }
+    public void setDeptId(String deptId) { this.deptId = deptId; }
+
     public List<String> getRoleIds() {
         return roleIds;
     }
@@ -153,13 +160,14 @@ public class UserDTO implements Serializable  {
                 Objects.equals(email, userDTO.email) &&
                 Objects.equals(avatar, userDTO.avatar) &&
                 Objects.equals(status, userDTO.status) &&
+                Objects.equals(deptId, userDTO.deptId) &&
                 Objects.equals(roleIds, userDTO.roleIds);
     }
 
     // hashCode 方法
     @Override
     public int hashCode() {
-        return Objects.hash(id, nickname, password, username, phone, email, avatar, status, roleIds);
+        return Objects.hash(id, nickname, password, username, phone, email, avatar, status, deptId, roleIds);
     }
 
     // toString 方法（出于安全考虑，不输出密码）
@@ -174,6 +182,7 @@ public class UserDTO implements Serializable  {
                 ", email='" + email + '\'' +
                 ", avatar='" + avatar + '\'' +
                 ", status=" + status +
+                ", deptId='" + deptId + '\'' +
                 ", roleIds=" + roleIds +
                 '}';
     }

@@ -2,8 +2,10 @@ package com.mok.framework.base.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.util.IdUtil;
+import com.mok.framework.base.service.DepartmentService;
 import com.mok.framework.base.service.RoleService;
 import com.mok.framework.base.service.UserService;
+import com.mok.framework.model.entity.DepartmentEntity;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.R;
@@ -39,13 +41,16 @@ public class UserController {
 
     private final UserService userService;
     private final RoleService roleService;
+    private final DepartmentService departmentService;
     private final PasswordEncoder passwordEncoder;
 
     public UserController(UserService userService,
                           RoleService roleService,
+                          DepartmentService departmentService,
                           PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.roleService = roleService;
+        this.departmentService = departmentService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -95,6 +100,13 @@ public class UserController {
         result.put("roleIds", roleService.getRolesByUserId(id).stream()
                 .map(RoleEntity::getId)
                 .toList());
+        // 查询部门信息
+        if (userEntity.getDeptId() != null && !userEntity.getDeptId().isEmpty()) {
+            DepartmentEntity dept = departmentService.getDeptById(userEntity.getDeptId());
+            if (dept != null) {
+                result.put("deptName", dept.getDeptName());
+            }
+        }
         return R.ok(result);
     }
 
@@ -132,6 +144,7 @@ public class UserController {
         userEntity.setEmail(userDTO.getEmail());
         userEntity.setAvatar(userDTO.getAvatar());
         userEntity.setStatus(userDTO.getStatus());
+        userEntity.setDeptId(userDTO.getDeptId());
         // 设置创建者为当前用户
         userEntity.setCreateBy(currentUserEntity.getId());
         userService.save(userEntity);
@@ -184,6 +197,7 @@ public class UserController {
         userEntity.setEmail(userUpdateDto.getEmail());
         userEntity.setAvatar(userUpdateDto.getAvatar());
         userEntity.setStatus(userUpdateDto.getStatus());
+        userEntity.setDeptId(userUpdateDto.getDeptId());
 
         userService.updateById(userEntity);
 
