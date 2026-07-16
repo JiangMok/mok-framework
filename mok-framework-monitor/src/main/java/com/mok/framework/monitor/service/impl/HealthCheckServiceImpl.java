@@ -2,6 +2,7 @@ package com.mok.framework.monitor.service.impl;
 
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.monitor.service.HealthCheckService;
+import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -13,7 +14,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
+import java.io.File;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.ThreadMXBean;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,9 +62,9 @@ public class HealthCheckServiceImpl implements HealthCheckService {
         Map<String, Object> healthInfo = new HashMap<>();
         healthInfo.put("timestamp", System.currentTimeMillis());
 
-//        // 检查数据库连接
-//        HealthCheckResult dbResult = checkDatabase();
-//        healthInfo.put("database", dbResult);
+        // 检查数据库连接
+        HealthCheckResult dbResult = checkDatabase();
+        healthInfo.put("database", dbResult);
 
         // 检查Redis连接
         HealthCheckResult redisResult = checkRedis();
@@ -73,15 +82,42 @@ public class HealthCheckServiceImpl implements HealthCheckService {
         HealthCheckResult rabbitmqResult = checkRabbitMQ();
         healthInfo.put("rabbitmq", rabbitmqResult);
 
-        // 计算总体状态
-        boolean allHealthy =
-//                dbResult.isUp()
-//                &&
-        redisResult.isUp()
-                && memoryResult.isUp()
-//                && elasticsearchResult.isUp()
-                && rabbitmqResult.isUp();
-        healthInfo.put("status", allHealthy ? "UP" : "DOWN");
+        // 检查 CPU
+        HealthCheckResult cpuResult = checkCpu();
+        healthInfo.put("cpu", cpuResult);
+
+        // 检查线程
+        HealthCheckResult threadsResult = checkThreads();
+        healthInfo.put("threads", threadsResult);
+
+        // 检查 GC
+        HealthCheckResult gcResult = checkGc();
+        healthInfo.put("gc", gcResult);
+
+        // 检查磁盘
+        HealthCheckResult diskResult = checkDisk();
+        healthInfo.put("disk", diskResult);
+
+        // 检查连接池
+        HealthCheckResult poolResult = checkConnectionPool();
+        healthInfo.put("connectionPool", poolResult);
+
+        // 计算总体状态：有 DOWN → DOWN，有 WARNING 但无 DOWN → WARNING，否则 UP
+        HealthCheckResult[] results = {
+                redisResult, memoryResult, rabbitmqResult,
+                cpuResult, threadsResult, gcResult, diskResult, poolResult
+        };
+        boolean hasDown = false;
+        boolean hasWarning = false;
+        for (HealthCheckResult r : results) {
+            if (!r.isUp()) hasDown = true;
+            else if ("WARNING".equals(r.getStatus())) hasWarning = true;
+        }
+        String overall;
+        if (hasDown) overall = "DOWN";
+        else if (hasWarning) overall = "WARNING";
+        else overall = "UP";
+        healthInfo.put("status", overall);
         healthInfo.put("application", "MOK-Framework");
         healthInfo.put("version", "1.1.0");
 
@@ -91,45 +127,45 @@ public class HealthCheckServiceImpl implements HealthCheckService {
     /**
      * 检查数据库连接
      */
-//    private HealthCheckResult checkDatabase() {
-//        long startTime = System.currentTimeMillis();
-//        try {
-//            // 1. 检查连接池
-//            try (Connection connection = dataSource.getConnection()) {
-//                // 5秒超时
-//                boolean isValid = connection.isValid(5);
-//                long responseTime = System.currentTimeMillis() - startTime;
-//
-//                // 2. 执行简单查询
-//                String version = jdbcTemplate.queryForObject(
-//                        "SELECT VERSION()", String.class
-//                );
-//                int userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_user WHERE is_deleted = 0", Integer.class);
-//
-//                return HealthCheckResult.builder()
-//                        .status("UP")
-//                        .details(Map.of(
-//                                "version", version,
-//                                "userCount", userCount,
-//                                "responseTime", responseTime + "ms",
-//                                "connection", "Valid"
-//                        ))
-//                        .build();
-//            }
-//        } catch (SQLException e) {
-//            log.error("数据库健康检查失败", e);
-//            return HealthCheckResult.builder()
-//                    .status("DOWN")
-//                    .details(Map.of("error", e.getMessage()))
-//                    .build();
-//        } catch (Exception e) {
-//            log.error("数据库查询失败", e);
-//            return HealthCheckResult.builder()
-//                    .status("DOWN")
-//                    .details(Map.of("error", "数据库查询失败: " + e.getMessage()))
-//                    .build();
-//        }
-//    }
+    private HealthCheckResult checkDatabase() {
+        long startTime = System.currentTimeMillis();
+        try {
+            // 1. 检查连接池
+            try (Connection connection = dataSource.getConnection()) {
+                // 5秒超时
+                boolean isValid = connection.isValid(5);
+                long responseTime = System.currentTimeMillis() - startTime;
+
+                // 2. 执行简单查询
+                String version = jdbcTemplate.queryForObject(
+                        "SELECT VERSION()", String.class
+                );
+                int userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_user WHERE is_deleted = 0", Integer.class);
+
+                return HealthCheckResult.builder()
+                        .status("UP")
+                        .details(Map.of(
+                                "version", version,
+                                "userCount", userCount,
+                                "responseTime", responseTime + "ms",
+                                "connection", "Valid"
+                        ))
+                        .build();
+            }
+        } catch (SQLException e) {
+            log.error("数据库健康检查失败", e);
+            return HealthCheckResult.builder()
+                    .status("DOWN")
+                    .details(Map.of("error", e.getMessage()))
+                    .build();
+        } catch (Exception e) {
+            log.error("数据库查询失败", e);
+            return HealthCheckResult.builder()
+                    .status("DOWN")
+                    .details(Map.of("error", "数据库查询失败: " + e.getMessage()))
+                    .build();
+        }
+    }
 
     /**
      * 检查 Redis 连接
@@ -275,6 +311,189 @@ public class HealthCheckServiceImpl implements HealthCheckService {
                     .build();
         } catch (Exception e) {
             log.error("RabbitMQ 健康检查异常", e);
+            return HealthCheckResult.builder()
+                    .status("DOWN")
+                    .details(Map.of("error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * 检查 CPU 使用情况
+     */
+    private HealthCheckResult checkCpu() {
+        try {
+            OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            int processors = Runtime.getRuntime().availableProcessors();
+            double loadAvg = osBean.getSystemLoadAverage();
+
+            Map<String, Object> details = new HashMap<>();
+            details.put("processors", processors);
+            details.put("loadAverage", String.format("%.2f", loadAvg >= 0 ? loadAvg : 0));
+            details.put("loadPerProcessor", String.format("%.2f%%",
+                    loadAvg >= 0 ? (loadAvg / processors) * 100 : 0));
+
+            // 负载超过核数的 80% 视为警告
+            String status = (loadAvg >= 0 && loadAvg > processors * 0.8) ? "WARNING" : "UP";
+
+            return HealthCheckResult.builder()
+                    .status(status)
+                    .details(details)
+                    .build();
+        } catch (Exception e) {
+            log.error("CPU 健康检查失败", e);
+            return HealthCheckResult.builder()
+                    .status("DOWN")
+                    .details(Map.of("error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * 检查线程使用情况
+     */
+    private HealthCheckResult checkThreads() {
+        try {
+            ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+            int activeThreads = threadBean.getThreadCount();
+            int peakThreads = threadBean.getPeakThreadCount();
+            long totalStarted = threadBean.getTotalStartedThreadCount();
+            int daemonThreads = threadBean.getDaemonThreadCount();
+
+            Map<String, Object> details = new HashMap<>();
+            details.put("active", activeThreads);
+            details.put("peak", peakThreads);
+            details.put("daemon", daemonThreads);
+            details.put("totalStarted", totalStarted);
+            details.put("deadlocked", threadBean.findDeadlockedThreads() != null
+                    ? threadBean.findDeadlockedThreads().length : 0);
+
+            // 活跃线程超过 500 视为警告
+            String status = activeThreads > 500 ? "WARNING" : "UP";
+
+            return HealthCheckResult.builder()
+                    .status(status)
+                    .details(details)
+                    .build();
+        } catch (Exception e) {
+            log.error("线程健康检查失败", e);
+            return HealthCheckResult.builder()
+                    .status("DOWN")
+                    .details(Map.of("error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * 检查 GC 情况
+     */
+    private HealthCheckResult checkGc() {
+        try {
+            List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+            long totalGcCount = 0;
+            long totalGcTime = 0;
+
+            Map<String, Object> details = new HashMap<>();
+            for (GarbageCollectorMXBean gcBean : gcBeans) {
+                totalGcCount += gcBean.getCollectionCount();
+                totalGcTime += gcBean.getCollectionTime();
+                details.put(gcBean.getName() + "Count", gcBean.getCollectionCount());
+                details.put(gcBean.getName() + "Time", gcBean.getCollectionTime() + "ms");
+            }
+            details.put("totalCollections", totalGcCount);
+            details.put("totalTime", totalGcTime + "ms");
+
+            String status = "UP";
+
+            return HealthCheckResult.builder()
+                    .status(status)
+                    .details(details)
+                    .build();
+        } catch (Exception e) {
+            log.error("GC 健康检查失败", e);
+            return HealthCheckResult.builder()
+                    .status("DOWN")
+                    .details(Map.of("error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * 检查磁盘空间
+     */
+    private HealthCheckResult checkDisk() {
+        try {
+            File[] roots = File.listRoots();
+            Map<String, Object> details = new HashMap<>();
+            String worstStatus = "UP";
+
+            for (File root : roots) {
+                long total = root.getTotalSpace();
+                long free = root.getFreeSpace();
+                long usable = root.getUsableSpace();
+                double usedPercent = total > 0 ? ((double) (total - free) / total) * 100 : 0;
+
+                Map<String, Object> diskInfo = new HashMap<>();
+                diskInfo.put("total", formatBytes(total));
+                diskInfo.put("free", formatBytes(free));
+                diskInfo.put("usable", formatBytes(usable));
+                diskInfo.put("usedPercent", String.format("%.1f%%", usedPercent));
+
+                details.put(root.getPath(), diskInfo);
+
+                // 使用率超过 90% 视为警告
+                if (usedPercent > 90) {
+                    worstStatus = "WARNING";
+                } else if (usedPercent > 95) {
+                    worstStatus = "DOWN";
+                }
+            }
+
+            return HealthCheckResult.builder()
+                    .status(worstStatus)
+                    .details(details)
+                    .build();
+        } catch (Exception e) {
+            log.error("磁盘健康检查失败", e);
+            return HealthCheckResult.builder()
+                    .status("DOWN")
+                    .details(Map.of("error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * 检查数据库连接池状态 (HikariCP)
+     */
+    private HealthCheckResult checkConnectionPool() {
+        try {
+            if (dataSource instanceof HikariDataSource) {
+                HikariDataSource hikariDs = (HikariDataSource) dataSource;
+                com.zaxxer.hikari.HikariPoolMXBean poolBean = hikariDs.getHikariPoolMXBean();
+
+                Map<String, Object> details = new HashMap<>();
+                details.put("active", poolBean.getActiveConnections());
+                details.put("idle", poolBean.getIdleConnections());
+                details.put("total", poolBean.getTotalConnections());
+                details.put("pending", poolBean.getThreadsAwaitingConnection());
+                details.put("maxPoolSize", hikariDs.getMaximumPoolSize());
+                details.put("connectionTimeout", hikariDs.getConnectionTimeout() + "ms");
+
+                // 等待线程 > 0 视为警告
+                String status = poolBean.getThreadsAwaitingConnection() > 0 ? "WARNING" : "UP";
+
+                return HealthCheckResult.builder()
+                        .status(status)
+                        .details(details)
+                        .build();
+            } else {
+                return HealthCheckResult.builder()
+                        .status("UP")
+                        .details(Map.of("info", "非 HikariCP 数据源，跳过连接池检查"))
+                        .build();
+            }
+        } catch (Exception e) {
+            log.error("连接池健康检查失败", e);
             return HealthCheckResult.builder()
                     .status("DOWN")
                     .details(Map.of("error", e.getMessage()))

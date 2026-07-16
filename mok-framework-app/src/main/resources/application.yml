@@ -83,7 +83,7 @@ file:
 # 验证码实现策略：接口 com.mok.framework.captcha.service.CaptchaService
 captchaImpl:
   generate:
-    type: hutool   # 可选: mok-framework / hutool
+    type: mok-framework   # 可选: mok-framework / hutool
 
 # 操作日志存储策略：接口 com.mok.framework.operationLog.service.OperationLogService
 operationlogImpl:
@@ -98,4 +98,4 @@ captcha:
   height: 40
   length: 4        # 当 type = math 时，此参数无效
   expire: 300
-  type: char       # math / char
+  type: math       # math / char

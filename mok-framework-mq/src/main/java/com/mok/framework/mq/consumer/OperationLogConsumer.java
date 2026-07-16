@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
+import static com.mok.framework.common.constant.mq.OperationLogMQConstant.*;
+
 /**
  * 操作日志消费者
  * <p>
@@ -38,7 +40,7 @@ public class OperationLogConsumer {
         this.mqFailedMessageSaver = mqFailedMessageSaver;
     }
 
-    @RabbitListener(queues = OperationLogMQConfig.OPERATION_LOG_QUEUE)
+    @RabbitListener(queues = OPERATION_LOG_QUEUE)
     public void handleOperationLog(OperationLogMessage message, Channel channel,
                                    @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
         log.info("接收到操作日志消息: {}", message.getTitle());
@@ -62,10 +64,10 @@ public class OperationLogConsumer {
             int currentRetry = (existLog != null && existLog.getRetryCount() != null) ? existLog.getRetryCount() : 0;
             if (existLog != null
                     && Integer.valueOf(1).equals(existLog.getStatus())
-                    && currentRetry >= OperationLogMQConfig.OPERATION_LOG_MAX_RETRY) {
+                    && currentRetry >= OPERATION_LOG_MAX_RETRY) {
                 log.warn("消息 {} 重试次数已达上限 {}，丢弃",
                         message.getId(),
-                        OperationLogMQConfig.OPERATION_LOG_MAX_RETRY);
+                        OPERATION_LOG_MAX_RETRY);
                 channel.basicAck(deliveryTag, false);
                 return;
             }
@@ -137,13 +139,13 @@ public class OperationLogConsumer {
     }
 
 
-    @RabbitListener(queues = OperationLogMQConfig.OPERATION_LOG_DLX_QUEUE)
+    @RabbitListener(queues = OPERATION_LOG_DLX_QUEUE)
     public void handleDlxOperationLog(Message message,
                                       Channel channel,
                                       @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
         mqFailedMessageSaver.saveAndAck(message, channel, deliveryTag,
                 MessageType.OPERATION_LOG,
-                "operation.log.dlx.queue",
+                OPERATION_LOG_DLX_QUEUE,
                 (body, record) -> {
                     OperationLogMessage opLog = JSON.parseObject(body, OperationLogMessage.class);
                     record.setMessageId(opLog.getId());

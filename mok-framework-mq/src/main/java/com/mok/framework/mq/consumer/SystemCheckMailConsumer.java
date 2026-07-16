@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static com.mok.framework.common.constant.mq.SystemCheckMailMQConstant.SYSTEM_CHECK_MAIL_QUEUE;
+
 /**
  * 系统检查邮件发送队列消费者
  */
@@ -52,9 +54,10 @@ public class SystemCheckMailConsumer {
      * @param channel
      * @param deliveryTag
      */
-    @RabbitListener(queues = SystemCheckMailMQConfig.SYSTEM_CHECK_MAIL_QUEUE)
+    @RabbitListener(queues = SYSTEM_CHECK_MAIL_QUEUE)
     public void handleSystemCheckMail(SystemCheckMailMessage msg, Channel channel,
                                       @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
+        log.info("======== 接收到系统健康检查邮件的消息: {}", msg.getSubject());
         try {
             mailService.sendAndLogMail(
                     msg.getRecipient(),
@@ -62,7 +65,7 @@ public class SystemCheckMailConsumer {
                     msg.getContent(),
                     msg.getId(),
                     MailType.SYSTEM_CHECK,
-                    false
+                    msg.isHtml()
             );
             // 无异常，发送成功
             channel.basicAck(deliveryTag, false);

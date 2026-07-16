@@ -35,6 +35,7 @@
         <module>mok-framework-excel</module>
         <module>mok-framework-ai</module>
         <module>mok-framework-mail</module>
+        <module>mok-framework-ratelimiter</module>
     </modules>
 
     <properties>

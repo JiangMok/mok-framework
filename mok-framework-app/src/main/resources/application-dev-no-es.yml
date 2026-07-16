@@ -205,11 +205,32 @@ mail:
   password: ${mail.password}   # 敏感信息占位，实际值在 dev-env.properties
 
 # ================================================================
-# [13] 自定义 AI 业务配置
+# [13] 自定义业务配置
 # ================================================================
 mok:
+  # AI模块
   ai:
     provider: deepseek        # 切换 openai 即可
     api-key: ${mok.ai.api-key}
     model: deepseek-v4-flash
-    system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"
+    system-prompt: "
+    你是一个专业的系统日志分析助手，只负责根据用户提供的日志信息，分析其中存在的错误或异常原因。严格遵守以下规则：
+    1. 只输出错误或异常的分析结论，不输出任何建议、解决方案、后续步骤或预防措施。
+    2. 如果日志中未发现错误或异常，只回复“当前日志未发现错误信息。”，不得推测任何潜在问题、隐含风险或兼容性隐患。
+    3. 绝对不要向用户提问，不要使用“请补充”“若您实际遇到”“需您确认”“欢迎补充”等任何引导用户提供更多信息的语句。
+    4. 仅基于日志内容本身进行分析，不做超出日志范围的推断。
+    5. 回答使用Markdown格式，层级清晰。
+    "
+  #限流模块
+  ratelimiter:
+    enabled: true                          # 是否启用限流模块
+    redis-key-prefix: "rate:limit:"        # Redis限流Key前缀
+    duplicate-key-prefix: "duplicate:submit:" # 防重复提交Key前缀
+    default-window: 60                     # 默认时间窗口（秒）
+    default-limit: 10                      # 默认限流次数
+    default-duplicate-lock-time: 3         # 默认防重复提交锁定时间（秒）
+    cluster-mode: false                    # 是否集群模式
+    default-rate-limit-message: "请求过于频繁，请稍后再试" # 默认限流提示信息
+    default-duplicate-message: "请勿重复提交" # 默认防重复提交提示信息
+    enable-monitor: true                   # 是否启用监控端点
+    monitor-path: "/actuator/ratelimit"    # 监控端点路径

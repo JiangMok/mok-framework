@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.mok.framework.common.annotation.OperationLog;
 import com.mok.framework.common.config.operationlog.OperationLogConfig;
+import com.mok.framework.common.constant.mq.OperationLogMQConstant;
 import com.mok.framework.common.mapper.OperationLogUserMapper;
 import com.mok.framework.common.utils.JsonDesensitizationUtil;
 import com.mok.framework.common.utils.LogUtils;
@@ -103,7 +104,7 @@ public class OperationLogAspect {
             // 6. 异步发送到消息队列（关键改动）
             // 直接使用RabbitTemplate发送
             // 发送到消息队列
-            rabbitTemplate.convertAndSend("operation.log.exchange", "operation.log.routing", message);
+            rabbitTemplate.convertAndSend(OperationLogMQConstant.OPERATION_LOG_EXCHANGE, OperationLogMQConstant.OPERATION_LOG_ROUTING_KEY, message);
             log.info("操作日志已发送到消息队列: {}", message.getTitle());
 
         } catch (Exception ex) {

@@ -1,11 +1,14 @@
-package com.mok.framework.common.enums;
+package com.mok.framework.ratelimiter.enums;
 
 /**
  * 防重复提交操作类型枚举
+ *
+ * @author mok
+ * @date 2026/2/26
  */
 public enum PreventDuplicateType {
 
-    /** 默认（兼容旧值"60"） */
+    /** 默认 */
     DEFAULT("default", "默认操作"),
     /** 提交订单 */
     SUBMIT_ORDER("order", "提交订单"),
@@ -32,7 +35,6 @@ public enum PreventDuplicateType {
         return desc;
     }
 
-    /** 根据code获取枚举，找不到返回DEFAULT */
     public static PreventDuplicateType fromCode(String code) {
         if (code == null) return DEFAULT;
         for (PreventDuplicateType type : values()) {

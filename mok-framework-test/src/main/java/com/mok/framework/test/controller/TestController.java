@@ -6,16 +6,13 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.stp.StpUtil;
 import com.mok.framework.common.R;
 import com.mok.framework.common.annotation.OperationLog;
-import com.mok.framework.common.annotation.PreventDuplicate;
 import com.mok.framework.common.enums.BusinessType;
-import com.mok.framework.common.enums.PreventDuplicateType;
 import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.enums.PreventDuplicateType;
 import org.slf4j.Logger;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/test")
@@ -23,6 +20,7 @@ public class TestController {
 
     private final static Logger log = LogUtils.getLogger(TestController.class);
     private final RedisTemplate<String, Object> redisTemplate;
+
 
     public TestController(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -46,11 +44,18 @@ public class TestController {
      *
      * @return
      */
+    @SaIgnore
     @SaCheckPermission("system:user:list")
-    @GetMapping("/testSaTokenCheckNoLogin")
+    @PostMapping("/testSaTokenCheckNoLogin")
     @OperationLog(title = "测试接口 - 无需登录", businessType = BusinessType.OTHER)
-    public R<String> testSaTokenCheckNoLogin() {
-        return R.ok("测试登录 --- 无需登录");
+    @PreventDuplicate(
+            key = "#testEntity.username",
+            lockTime = 5,
+            message = "请勿重复提交",
+            type = PreventDuplicateType.DEFAULT
+    )
+    public R<String> testSaTokenCheckNoLogin(@RequestBody TestEntity testEntity) {
+        return R.ok("测试登录 --- 无需登录 : "+testEntity.username);
     }
 
     /**
@@ -62,11 +67,6 @@ public class TestController {
      */
     @SaIgnore
     @GetMapping("/testDistributedLock/{userId}/{type}")
-    @PreventDuplicate(
-            key = "#userId",
-            type = PreventDuplicateType.DEFAULT,
-            lockTime = 5,
-            message = "请勿重复提交")
     public R<String> testDistributedLock(@PathVariable String userId, @PathVariable String type) {
         try {
             Thread.sleep(3000);

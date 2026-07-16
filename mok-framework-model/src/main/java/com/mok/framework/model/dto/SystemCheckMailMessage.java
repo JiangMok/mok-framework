@@ -15,6 +15,8 @@ public class SystemCheckMailMessage {
     private String subject;
     // 邮件正文
     private String content;
+    // 是否为 HTML 邮件
+    private boolean isHtml;
 
     @Override
     public String toString() {
@@ -68,5 +70,13 @@ public class SystemCheckMailMessage {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public boolean isHtml() {
+        return isHtml;
+    }
+
+    public void setHtml(boolean html) {
+        isHtml = html;
     }
 }

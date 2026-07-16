@@ -1,7 +1,9 @@
 package com.mok.framework.task.scheduler;
 
 import cn.hutool.core.util.IdUtil;
+import com.mok.framework.common.constant.mq.SystemCheckMailMQConstant;
 import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.mail.util.HealthCheckMailBuilder;
 import com.mok.framework.model.dto.SystemCheckMailMessage;
 import com.mok.framework.monitor.service.HealthCheckService;
 import com.mok.framework.task.config.TimeConfig;
@@ -13,25 +15,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-/**
- * @description: 定时健康检查
- * @author: JN
- * @date: 2026/1/6 14:57
- * @param:
- * @return:
- **/
-
 @Component
 public class HealthCheckTask {
     private static final Logger log = LogUtils.getLogger(HealthCheckTask.class);
 
     private final HealthCheckService healthCheckService;
     private final RabbitTemplate rabbitTemplate;
+    private final HealthCheckMailBuilder mailBuilder;
 
     public HealthCheckTask(HealthCheckService healthCheckService,
-                           RabbitTemplate rabbitTemplate) {
+                           RabbitTemplate rabbitTemplate,
+                           HealthCheckMailBuilder mailBuilder) {
         this.healthCheckService = healthCheckService;
         this.rabbitTemplate = rabbitTemplate;
+        this.mailBuilder = mailBuilder;
     }
 
     @PostConstruct
@@ -39,32 +36,29 @@ public class HealthCheckTask {
         System.out.println("========== HealthCheckTask Bean 已初始化");
     }
 
-    /**
-     * 每5分钟执行一次健康检查
-     */
-    @Scheduled(fixedRate = TimeConfig.FIVE_MINUTES) // 例:60秒 60*1000=60000
+    @Scheduled(fixedRate = TimeConfig.FIVE_MINUTES)
     public void scheduledHealthCheck() {
         try {
             Map<String, Object> health = healthCheckService.performHealthCheck();
             String status = (String) health.get("status");
 
-            if ("DOWN".equals(status)) {
-                log.error("❌ 系统健康检查失败: {}", health);
-                // 可以发送告警邮件、钉钉消息等
+            if (!"UP".equals(status)) {
+                log.warn("系统健康检查异常 ({}): {}", status, health);
+                String subject = "DOWN".equals(status)
+                        ? "mok-framework-系统健康检查失败通知"
+                        : "mok-framework-系统健康检查异常通知";
                 SystemCheckMailMessage message = new SystemCheckMailMessage();
                 message.setId(IdUtil.simpleUUID());
                 message.setRecipient("jiangmok@qq.com");
-                message.setSubject("mok-framework-系统健康检查失败通知");
-                message.setContent("系统健康检查失败 : \n" + health);
-                // 异步发送邮件
+                message.setSubject(subject);
+                message.setContent(mailBuilder.buildHtmlMail(health, status));
+                message.setHtml(true);
                 rabbitTemplate.convertAndSend(
-                        "system.check.mail.exchange",
-                        "system.check.mail.routing",
+                        SystemCheckMailMQConstant.SYSTEM_CHECK_MAIL_EXCHANGE,
+                        SystemCheckMailMQConstant.SYSTEM_CHECK_MAIL_ROUTING_KEY,
                         message);
-            } else if ("WARNING".equals(status)) {
-                log.warn("⚠️ 系统健康检查警告: {}", health);
             } else {
-                log.info("✅ 系统健康检查正常: {}", health);
+                log.info("系统健康检查正常: {}", health);
             }
         } catch (Exception e) {
             log.error("健康检查任务执行失败", e);
