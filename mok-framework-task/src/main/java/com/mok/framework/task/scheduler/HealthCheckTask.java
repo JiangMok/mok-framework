@@ -3,8 +3,10 @@ package com.mok.framework.task.scheduler;
 import cn.hutool.core.util.IdUtil;
 import com.mok.framework.common.constant.mq.SystemCheckMailMQConstant;
 import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.mail.service.MailService;
 import com.mok.framework.mail.util.HealthCheckMailBuilder;
 import com.mok.framework.model.dto.SystemCheckMailMessage;
+import com.mok.framework.model.enums.MailType;
 import com.mok.framework.monitor.service.HealthCheckService;
 import com.mok.framework.task.config.TimeConfig;
 import jakarta.annotation.PostConstruct;
@@ -22,13 +24,16 @@ public class HealthCheckTask {
     private final HealthCheckService healthCheckService;
     private final RabbitTemplate rabbitTemplate;
     private final HealthCheckMailBuilder mailBuilder;
+    private final MailService mailService;
 
     public HealthCheckTask(HealthCheckService healthCheckService,
                            RabbitTemplate rabbitTemplate,
-                           HealthCheckMailBuilder mailBuilder) {
+                           HealthCheckMailBuilder mailBuilder,
+                           MailService mailService) {
         this.healthCheckService = healthCheckService;
         this.rabbitTemplate = rabbitTemplate;
         this.mailBuilder = mailBuilder;
+        this.mailService = mailService;
     }
 
     @PostConstruct
@@ -53,10 +58,19 @@ public class HealthCheckTask {
                 message.setSubject(subject);
                 message.setContent(mailBuilder.buildHtmlMail(health, status));
                 message.setHtml(true);
-                rabbitTemplate.convertAndSend(
-                        SystemCheckMailMQConstant.SYSTEM_CHECK_MAIL_EXCHANGE,
-                        SystemCheckMailMQConstant.SYSTEM_CHECK_MAIL_ROUTING_KEY,
-                        message);
+//                rabbitTemplate.convertAndSend(
+//                        SystemCheckMailMQConstant.SYSTEM_CHECK_MAIL_EXCHANGE,
+//                        SystemCheckMailMQConstant.SYSTEM_CHECK_MAIL_ROUTING_KEY,
+//                        message);
+                //直接同步发送
+                mailService.sendAndLogMail(
+                        message.getRecipient(),
+                        message.getSubject(),
+                        message.getContent(),
+                        message.getId(),
+                        MailType.SYSTEM_CHECK,
+                        message.isHtml()
+                );
             } else {
                 log.info("系统健康检查正常: {}", health);
             }
