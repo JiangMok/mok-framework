@@ -1,23 +1,16 @@
 package com.mok.framework.mail.config;
 
-import cn.hutool.extra.mail.MailAccount;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 邮件模块配置
+ * MailAccount 改为由 MailSenderService 从 DB 动态构建（支持热刷新），
+ * 此处不再创建 MailAccount Bean
+ *
+ * @author mok
+ * @date 2026/6/30
+ */
 @Configuration
 public class MailConfiguration {
-
-    @Bean
-    public MailAccount mailAccount(MailProperties mailProperties) {
-        MailAccount account = new MailAccount();
-        account.setHost(mailProperties.getHost());
-        account.setPort(mailProperties.getPort());
-        account.setSslEnable(mailProperties.isSslEnable());
-        account.setStarttlsEnable(mailProperties.isStarttlsEnable());
-        account.setFrom(mailProperties.getFrom());
-        account.setUser(mailProperties.getUser());
-        account.setPass(mailProperties.getPassword());
-        account.setAuth(true);
-        return account;
-    }
+    // MailAccount 已移至 MailSenderServiceImpl 中动态管理（AtomicReference 热刷新）
 }
