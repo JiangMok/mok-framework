@@ -1,5 +1,7 @@
 package com.mok.framework.mail.service;
 
+import com.mok.framework.common.PageParam;
+import com.mok.framework.common.PageResult;
 import com.mok.framework.model.entity.MailLog;
 
 public interface MailLogService {
@@ -39,4 +41,31 @@ public interface MailLogService {
      * @return: void
     **/
     void saveOrUpdateByMessageId(MailLog mailLog);
+
+    /**
+     * @description: 分页查询邮件日志
+     * @author: mok
+     * @date: 2026/7/18
+     * @param: [param]
+     * @return: com.mok.framework.common.PageResult<com.mok.framework.model.entity.MailLog>
+    **/
+    PageResult<MailLog> getPage(PageParam param);
+
+    /**
+     * @description: 根据ID查询邮件日志
+     * @author: mok
+     * @date: 2026/7/18
+     * @param: [id]
+     * @return: com.mok.framework.model.entity.MailLog
+    **/
+    MailLog getById(String id);
+
+    /**
+     * @description: 根据ID删除邮件日志
+     * @author: mok
+     * @date: 2026/7/18
+     * @param: [id]
+     * @return: void
+    **/
+    void deleteById(String id);
 }

@@ -54,6 +54,7 @@ public class MailServiceImpl implements MailService {
             mailLog.setRetryCount(0);
             throw new RuntimeException("邮件发送失败", e);
         } finally {
+            log.info("========== 记录邮件日志 :{}",mailLog);
             mailLogService.saveOrUpdateByMessageId(mailLog);
         }
     }

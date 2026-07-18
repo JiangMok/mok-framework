@@ -34,7 +34,7 @@ spring:
         master:
           url: jdbc:mysql://${master.mysql.host}:${master.mysql.port}/mf_master_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
           username: root
-          password: ${spring.datasource.dynamic.datasource.master.password}
+          password: ${master.mysql.password}
           driver-class-name: com.mysql.cj.jdbc.Driver
           hikari:
             max-lifetime: 300000
@@ -46,7 +46,7 @@ spring:
           driver-class-name: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://${operationLog.mysql.host}:${operationLog.mysql.port}/mf_operation_log_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
           username: root
-          password: ${spring.datasource.dynamic.datasource.operationLog.password}
+          password: ${operationLog.mysql.password}
           hikari:
             max-lifetime: 300000
             maximum-pool-size: 10
@@ -195,14 +195,14 @@ operation-log:
 # ================================================================
 # [12] 邮件服务配置（Hutool MailUtil 使用）
 # ================================================================
-mail:
-  host: smtp.163.com
-  port: 465
-  ssl-enable: true
-  starttls-enable: false
-  from: mokservice@163.com
-  user: mokservice@163.com
-  password: ${mail.password}   # 敏感信息占位，实际值在 dev-env.properties
+#mail:
+#  host: smtp.163.com
+#  port: 465
+#  ssl-enable: true
+#  starttls-enable: false
+#  from: mokservice@163.com
+#  user: mokservice@163.com
+#  password: ${mail.password}   # 敏感信息占位，实际值在 dev-env.properties
 
 # ================================================================
 # [13] 自定义业务配置
