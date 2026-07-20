@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -46,9 +46,9 @@ public class MailRecipientServiceImpl implements MailRecipientService {
     private final MailLogService mailLogService;
 
     public MailRecipientServiceImpl(MailRecipientMapper mailRecipientMapper,
-                                     MailRecipientTypeMapper mailRecipientTypeMapper,
-                                     MailSenderService mailSenderService,
-                                     MailLogService mailLogService) {
+                                    MailRecipientTypeMapper mailRecipientTypeMapper,
+                                    MailSenderService mailSenderService,
+                                    MailLogService mailLogService) {
         this.mailRecipientMapper = mailRecipientMapper;
         this.mailRecipientTypeMapper = mailRecipientTypeMapper;
         this.mailSenderService = mailSenderService;
@@ -66,6 +66,23 @@ public class MailRecipientServiceImpl implements MailRecipientService {
         }
         wrapper.orderByDesc(MailRecipient::getCreateTime);
         IPage<MailRecipient> result = mailRecipientMapper.selectPage(page, wrapper);
+
+        // 批量填充 mailTypes
+        List<MailRecipient> records = result.getRecords();
+        if (!records.isEmpty()) {
+            List<String> recipientIds = records.stream()
+                    .map(MailRecipient::getId)
+                    .collect(Collectors.toList());
+            List<MailRecipientType> allTypes = mailRecipientTypeMapper.selectList(
+                    new LambdaQueryWrapper<MailRecipientType>()
+                            .in(MailRecipientType::getRecipientId, recipientIds));
+            Map<String, List<String>> typeMap = allTypes.stream()
+                    .collect(Collectors.groupingBy(
+                            MailRecipientType::getRecipientId,
+                            Collectors.mapping(MailRecipientType::getMailType, Collectors.toList())));
+            records.forEach(r -> r.setMailTypes(typeMap.getOrDefault(r.getId(), Collections.emptyList())));
+        }
+
         return PageResult.fromIPage(result);
     }
 
@@ -75,6 +92,14 @@ public class MailRecipientServiceImpl implements MailRecipientService {
         if (recipient == null) {
             throw new BusinessException("收件人不存在");
         }
+        // 填充 mailTypes
+        List<MailRecipientType> types = mailRecipientTypeMapper.selectList(
+                new LambdaQueryWrapper<MailRecipientType>()
+                        .eq(MailRecipientType::getRecipientId, id));
+        List<String> mailTypes = types.stream()
+                .map(MailRecipientType::getMailType)
+                .collect(Collectors.toList());
+        recipient.setMailTypes(mailTypes);
         return recipient;
     }
 
@@ -131,10 +156,10 @@ public class MailRecipientServiceImpl implements MailRecipientService {
         MailRecipient recipient = getById(id);
         MailAccount mailAccount = mailSenderService.getMailAccount();
 
-        String subject = "【MOK Framework】邮件测试";
+        String subject = "【MOK App】邮件测试";
         String content = "<h3>邮件发送测试</h3>" +
                 "<p>您好，" + recipient.getName() + "：</p>" +
-                "<p>这是一封来自 <b>MOK Framework</b> 的测试邮件，证明邮件配置正确。</p>" +
+                "<p>这是一封来自 <b>MOK App</b> 的测试邮件，证明邮件配置正确。</p>" +
                 "<p>发送时间：" + java.time.LocalDateTime.now() + "</p>";
 
         String messageId = IdUtil.simpleUUID();

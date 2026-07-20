@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -31,6 +32,10 @@ public class MailRecipient implements Serializable {
     @TableField("status")
     private Integer status;
 
+    /** 订阅的邮件类型列表（非数据库字段，仅用于数据传递） */
+    @TableField(exist = false)
+    private List<String> mailTypes;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
@@ -41,11 +46,12 @@ public class MailRecipient implements Serializable {
     }
 
     public MailRecipient(String id, String email, String name, Integer status,
-                         LocalDateTime createTime, LocalDateTime updateTime) {
+                         List<String> mailTypes, LocalDateTime createTime, LocalDateTime updateTime) {
         this.id = id;
         this.email = email;
         this.name = name;
         this.status = status;
+        this.mailTypes = mailTypes;
         this.createTime = createTime;
         this.updateTime = updateTime;
     }
@@ -59,6 +65,7 @@ public class MailRecipient implements Serializable {
         private String email;
         private String name;
         private Integer status;
+        private List<String> mailTypes;
         private LocalDateTime createTime;
         private LocalDateTime updateTime;
 
@@ -66,11 +73,12 @@ public class MailRecipient implements Serializable {
         public Builder email(String email) { this.email = email; return this; }
         public Builder name(String name) { this.name = name; return this; }
         public Builder status(Integer status) { this.status = status; return this; }
+        public Builder mailTypes(List<String> mailTypes) { this.mailTypes = mailTypes; return this; }
         public Builder createTime(LocalDateTime createTime) { this.createTime = createTime; return this; }
         public Builder updateTime(LocalDateTime updateTime) { this.updateTime = updateTime; return this; }
 
         public MailRecipient build() {
-            return new MailRecipient(id, email, name, status, createTime, updateTime);
+            return new MailRecipient(id, email, name, status, mailTypes, createTime, updateTime);
         }
     }
 
@@ -86,6 +94,9 @@ public class MailRecipient implements Serializable {
 
     public Integer getStatus() { return status; }
     public MailRecipient setStatus(Integer status) { this.status = status; return this; }
+
+    public List<String> getMailTypes() { return mailTypes; }
+    public MailRecipient setMailTypes(List<String> mailTypes) { this.mailTypes = mailTypes; return this; }
 
     public LocalDateTime getCreateTime() { return createTime; }
     public MailRecipient setCreateTime(LocalDateTime createTime) { this.createTime = createTime; return this; }
@@ -103,13 +114,14 @@ public class MailRecipient implements Serializable {
                 Objects.equals(email, that.email) &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(status, that.status) &&
+                Objects.equals(mailTypes, that.mailTypes) &&
                 Objects.equals(createTime, that.createTime) &&
                 Objects.equals(updateTime, that.updateTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, email, name, status, createTime, updateTime);
+        return Objects.hash(id, email, name, status, mailTypes, createTime, updateTime);
     }
 
     @Override
@@ -119,6 +131,7 @@ public class MailRecipient implements Serializable {
                 ", email='" + email + '\'' +
                 ", name='" + name + '\'' +
                 ", status=" + status +
+                ", mailTypes=" + mailTypes +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +
                 '}';
