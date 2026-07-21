@@ -1,5 +1,6 @@
 package com.mok.framework.runner;
 
+import com.mok.framework.app.config.SystemStartConfig;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.mail.service.MailService;
 import com.mok.framework.mail.util.HealthCheckMailBuilder;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-@Order(1)
+@Order(2)
 public class SystemHealthCheckRunner implements ApplicationRunner {
 
     private final static Logger log = LogUtils.getLogger(SystemHealthCheckRunner.class);
@@ -22,13 +23,16 @@ public class SystemHealthCheckRunner implements ApplicationRunner {
     private final HealthCheckService healthCheckService;
     private final MailService mailService;
     private final HealthCheckMailBuilder mailBuilder;
+    private final SystemStartConfig systemStartConfig;
 
     public SystemHealthCheckRunner(HealthCheckService healthCheckService,
                                    MailService mailService,
-                                   HealthCheckMailBuilder mailBuilder) {
+                                   HealthCheckMailBuilder mailBuilder,
+                                   SystemStartConfig systemStartConfig) {
         this.healthCheckService = healthCheckService;
         this.mailService = mailService;
         this.mailBuilder = mailBuilder;
+        this.systemStartConfig = systemStartConfig;
     }
 
     @Override
@@ -56,9 +60,12 @@ public class SystemHealthCheckRunner implements ApplicationRunner {
         String status = String.valueOf(health.getOrDefault("status", "UP"));
         String subject = "mok-framework-系统启动健康报告";
         String content = mailBuilder.buildHtmlMail(health, status);
-
         // 按邮件类型群发到所有订阅了 SYSTEM_CHECK 的收件人
-        mailService.sendByMailType(MailType.SYSTEM_CHECK, subject, content, true);
+        log.error("========== 系统启动健康邮件配置:{}",
+                systemStartConfig.getSystemStartCheckMail() ? "启用":"停用");
+        if(systemStartConfig.getSystemStartCheckMail()){
+            mailService.sendByMailType(MailType.SYSTEM_CHECK, subject, content, true);
+        }
         log.info("========== 系统启动健康报告邮件已发送: status={}", status);
         log.info("========== 🔚 执行健康检查 - 结束 ==========");
     }

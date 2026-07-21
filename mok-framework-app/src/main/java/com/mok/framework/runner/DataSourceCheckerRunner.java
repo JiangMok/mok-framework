@@ -5,6 +5,7 @@ import com.mok.framework.common.utils.LogUtils;
 import org.slf4j.Logger;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
@@ -20,6 +21,7 @@ import java.util.Set;
  * @date 2026/04/22
  */
 @Component
+@Order(1)
 public class DataSourceCheckerRunner implements ApplicationRunner {
 
     private static final Logger log = LogUtils.getLogger(DataSourceCheckerRunner.class);
@@ -31,7 +33,7 @@ public class DataSourceCheckerRunner implements ApplicationRunner {
     }
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
+    public void run(ApplicationArguments args) {
         // 1.判断数据源是否是多数据源,如果是多数据源,获取当前所有数据源
         if(dataSource instanceof DynamicRoutingDataSource dynamicRoutingDataSource){
             // 2.输出多数据基本信息
