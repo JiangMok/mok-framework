@@ -7,7 +7,6 @@ import com.mok.framework.mq.service.MqFailedMessageSaver;
 import com.mok.framework.operationLog.service.OperationLogService;
 import com.mok.framework.model.dto.OperationLogMessage;
 import com.mok.framework.model.entity.OperationLogEntity;
-import com.mok.framework.mq.config.queue.OperationLogMQConfig;
 import com.rabbitmq.client.Channel;
 import org.slf4j.Logger;
 import org.springframework.amqp.core.Message;
@@ -73,7 +72,6 @@ public class OperationLogConsumer {
             }
 
             // 4. 业务处理：保存操作日志（成功）
-            logEntity.setStatus(0);
             logEntity.setRetryCount(currentRetry);
             saveOrUpdateLog(logEntity);
             channel.basicAck(deliveryTag, false);

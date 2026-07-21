@@ -10,7 +10,7 @@ spring:
   #  激活的环境 Profile（dev-no-es / prod）
   # ------------------------------------
   profiles:
-    active: dev-no-es
+    active: dev
 
   # ------------------------------------
   #  外部配置文件导入顺序
@@ -67,7 +67,7 @@ system:
 file:
   storage:
     base-path: ${user.home}/mok-uploads
-    url-prefix: /api/uploads
+    url-prefix: /data/uploads
     base-url: http://localhost:8080
     allowed-types:
       - image/jpeg
@@ -88,7 +88,7 @@ captchaImpl:
 # 操作日志存储策略：接口 com.mok.framework.operationLog.service.OperationLogService
 operationlogImpl:
   save-location:
-    type: mysql    # 可选: mysql / es
+    type: es    # 可选: mysql / es
 
 # ================================================================
 #  [6] 验证码业务参数（Hutool 实现时仅生效width和height）

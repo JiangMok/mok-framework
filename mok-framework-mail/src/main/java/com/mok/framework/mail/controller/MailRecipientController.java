@@ -43,7 +43,7 @@ public class MailRecipientController {
     }
 
     @Operation(summary = "新增收件人")
-    @OperationLog(title = "收件人管理", businessType = BusinessType.INSERT)
+    @OperationLog(title = "收件人管理-新增", businessType = BusinessType.INSERT)
     @PostMapping
     public R<Void> create(@Valid @RequestBody MailRecipientDTO dto) {
         mailRecipientService.create(dto);
@@ -51,7 +51,7 @@ public class MailRecipientController {
     }
 
     @Operation(summary = "更新收件人")
-    @OperationLog(title = "收件人管理", businessType = BusinessType.UPDATE)
+    @OperationLog(title = "收件人管理-更新", businessType = BusinessType.UPDATE)
     @PutMapping
     public R<Void> update(@Valid @RequestBody MailRecipientDTO dto) {
         mailRecipientService.update(dto);
@@ -59,7 +59,7 @@ public class MailRecipientController {
     }
 
     @Operation(summary = "删除收件人")
-    @OperationLog(title = "收件人管理", businessType = BusinessType.DELETE)
+    @OperationLog(title = "收件人管理-删除", businessType = BusinessType.DELETE)
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable String id) {
         mailRecipientService.delete(id);
@@ -67,7 +67,7 @@ public class MailRecipientController {
     }
 
     @Operation(summary = "测试发送邮件")
-    @OperationLog(title = "收件人管理", businessType = BusinessType.OTHER)
+    @OperationLog(title = "收件人管理-测试发送", businessType = BusinessType.OTHER)
     @PostMapping("/test/{id}")
     public R<Void> testSend(@PathVariable String id) {
         mailRecipientService.testSend(id);
