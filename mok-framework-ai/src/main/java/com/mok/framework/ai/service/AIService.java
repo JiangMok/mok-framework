@@ -1,5 +1,7 @@
 package com.mok.framework.ai.service;
 
+import com.mok.framework.model.enums.AiAnalysisRequestType;
+
 import java.io.Closeable;
 import java.util.function.Consumer;
 
@@ -13,7 +15,9 @@ public interface AIService extends Closeable {
      * @param prompt   用户提示词
      * @param consumer 每段文本回调
      */
-    void streamAnalysis(String prompt, Consumer<String> consumer);
+    void streamAnalysis(String prompt,
+                        String systemPrompt,
+                        Consumer<String> consumer);
 
     /**
      * 关闭连接（中断当前的流）

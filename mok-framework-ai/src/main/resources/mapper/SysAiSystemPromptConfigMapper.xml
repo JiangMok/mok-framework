@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mok.framework.ai.mapper.SysAiSystemPromptConfigMapper">
+
+    <!-- 通用结果映射 -->
+    <resultMap id="BaseResultMap" type="com.mok.framework.model.entity.SysAiSystemPromptConfig">
+        <id column="id" property="id" jdbcType="VARCHAR"/>
+        <result column="ai_analysis_request_type" property="aiAnalysisRequestType" jdbcType="VARCHAR"/>
+        <result column="system_prompt" property="systemPrompt" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="create_by" property="createBy" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 根据类型查询单条记录 -->
+    <select id="getByAiAnalysisRequestType" resultMap="BaseResultMap">
+        SELECT
+            id,
+            ai_analysis_request_type,
+            system_prompt,
+            create_time,
+            update_time,
+            create_by
+        FROM
+            sys_ai_system_prompt_config
+        WHERE
+            ai_analysis_request_type = #{type, jdbcType=VARCHAR}
+        LIMIT 1
+    </select>
+
+</mapper>

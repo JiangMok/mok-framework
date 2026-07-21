@@ -6,7 +6,9 @@ import com.alibaba.fastjson2.JSONObject; // JSON 对象
 import com.mok.framework.ai.config.AiProperties; // AI 相关配置属性
 import com.mok.framework.ai.service.AIService; // AI 服务接口
 import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.model.enums.AiAnalysisRequestType;
 import okhttp3.*; // OkHttp 网络请求相关类
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger; // 日志接口
 
 import java.io.BufferedReader; // 用于读取流
@@ -30,27 +32,9 @@ public class DeepSeekAIService implements AIService { // 实现 AI 服务接口�
     }
 
     @Override
-    public void streamAnalysis(String prompt, Consumer<String> consumer) { // 流式分析入口
+    public void streamAnalysis(String prompt, String systemPrompt, Consumer<String> consumer) { // 流式分析入口
         // 构建 system 消息，角色为 system，内容使用预置的系统提示词
-        JSONObject systemMessage = new JSONObject();
-        systemMessage.put("role", "system");
-        systemMessage.put("content", properties.getSystemPrompt());
-
-        // 构建 user 消息，内容为用户输入的 prompt
-        JSONObject userMessage = new JSONObject();
-        userMessage.put("role", "user");
-        userMessage.put("content", prompt);
-
-        // 组装 messages 数组，包含 system 和 user 两条消息
-        JSONArray messages = new JSONArray();
-        messages.add(systemMessage);
-        messages.add(userMessage);
-
-        // 构建请求体 JSON
-        JSONObject body = new JSONObject();
-        body.put("model", properties.getModel()); // 指定使用的模型名称
-        body.put("messages", messages); // 对话消息
-        body.put("stream", true); // 开启流式响应
+        JSONObject body = getJsonObject(prompt,systemPrompt);
 
         // 构建 HTTP 请求
         Request request = new Request.Builder()
@@ -97,6 +81,29 @@ public class DeepSeekAIService implements AIService { // 实现 AI 服务接口�
         } finally {
             currentCall = null; // 清理引用，防止后续误操作
         }
+    }
+
+    private @NonNull JSONObject getJsonObject(String prompt,String systemPrompt) {
+        JSONObject systemMessage = new JSONObject();
+        systemMessage.put("role", "system");
+        systemMessage.put("content", systemPrompt.isEmpty() ? properties.getSystemPrompt():systemPrompt);
+
+        // 构建 user 消息，内容为用户输入的 prompt
+        JSONObject userMessage = new JSONObject();
+        userMessage.put("role", "user");
+        userMessage.put("content", prompt);
+
+        // 组装 messages 数组，包含 system 和 user 两条消息
+        JSONArray messages = new JSONArray();
+        messages.add(systemMessage);
+        messages.add(userMessage);
+
+        // 构建请求体 JSON
+        JSONObject body = new JSONObject();
+        body.put("model", properties.getModel()); // 指定使用的模型名称
+        body.put("messages", messages); // 对话消息
+        body.put("stream", true); // 开启流式响应
+        return body;
     }
 
     @Override

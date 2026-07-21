@@ -3,6 +3,7 @@ package com.mok.framework.ai.service.impl;
 import com.mok.framework.ai.config.AiProperties;
 import com.mok.framework.ai.service.AIService;
 import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.model.enums.AiAnalysisRequestType;
 import org.slf4j.Logger;
 
 import java.util.function.Consumer;
@@ -18,7 +19,7 @@ public class OpenAIAIService implements AIService {
     }
 
     @Override
-    public void streamAnalysis(String prompt, Consumer<String> consumer) {
+    public void streamAnalysis(String prompt, String systemPrompt, Consumer<String> consumer) {
         log.info("========== 使用openAI");
         throw new UnsupportedOperationException("========== OpenAI provider is not yet implemented");
     }
