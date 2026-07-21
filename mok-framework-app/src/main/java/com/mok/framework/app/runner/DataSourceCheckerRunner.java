@@ -1,4 +1,4 @@
-package com.mok.framework.runner;
+package com.mok.framework.app.runner;
 
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.mok.framework.common.utils.LogUtils;
