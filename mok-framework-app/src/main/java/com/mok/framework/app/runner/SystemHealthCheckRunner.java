@@ -61,12 +61,12 @@ public class SystemHealthCheckRunner implements ApplicationRunner {
         String subject = "mok-framework-系统启动健康报告";
         String content = mailBuilder.buildHtmlMail(health, status);
         // 按邮件类型群发到所有订阅了 SYSTEM_CHECK 的收件人
-        log.error("========== 系统启动健康邮件配置:{}",
+        log.info("========== 系统启动健康邮件配置:{}",
                 systemStartConfig.getSystemStartCheckMail() ? "启用":"停用");
         if(systemStartConfig.getSystemStartCheckMail()){
             mailService.sendByMailType(MailType.SYSTEM_CHECK, subject, content, true);
+            log.info("========== 系统启动健康报告邮件已发送: status={}", status);
         }
-        log.info("========== 系统启动健康报告邮件已发送: status={}", status);
         log.info("========== 🔚 执行健康检查 - 结束 ==========");
     }
 }
