@@ -64,19 +64,6 @@ system:
     - secret
     - apiKey
 
-file:
-  storage:
-    base-path: ${user.home}/mok-uploads
-    url-prefix: /data/uploads
-    base-url: http://localhost:8080
-    allowed-types:
-      - image/jpeg
-      - image/png
-      - image/gif
-      - application/pdf
-      - application/msword
-      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
-
 # ================================================================
 #  [5] 系统动态配置（策略接口实现选择）
 # ================================================================

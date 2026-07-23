@@ -236,3 +236,19 @@ mok:
     monitor-path: "/actuator/ratelimit"    # 监控端点路径
   start:
     systemStartCheckMail: false
+
+# ================================================================
+# [14] 文件上传配置
+# ================================================================
+file:
+  storage:
+    base-path: ${user.home}/mok-uploads
+    url-prefix: /api/uploads
+    base-url: http://localhost:8080
+    allowed-types:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - application/pdf
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document

@@ -227,6 +227,19 @@
   #    health:
   #      show-details: always
 
+file:
+  storage:
+    base-path: ${user.home}/mok-uploads
+    url-prefix: /api/uploads
+    base-url: http://localhost:8080
+    allowed-types:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - application/pdf
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+
   # 自定义 AI 助手配置
   mok:
     ai:

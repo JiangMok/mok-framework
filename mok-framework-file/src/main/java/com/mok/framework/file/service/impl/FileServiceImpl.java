@@ -137,7 +137,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
             log.info("文件保存信息: 路径={}, 访问URL={}, 完整URL={}",
                     fullPath.toString(),
                     fileEntity.getFileUrl(),
-                    String.format("http://localhost:8080%s", fileEntity.getFileUrl()));
+                    String.format(fileStorageConfig.getBasePath()+"%s", fileEntity.getFileUrl()));
             // 6. 返回结果
             return FileUploadResponse.builder()
                     .id(fileEntity.getId())

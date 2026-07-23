@@ -209,3 +209,26 @@ server:
     uri-encoding: UTF-8
     max-threads: 500                # 生产环境提升线程数
     min-spare-threads: 50
+
+# ================================================================
+#  文件存储配置
+# ================================================================
+file:
+  storage:
+    base-path: /data/uploads  # Docker容器内路径
+    url-prefix: /api/uploads
+    base-url: ${FILE_BASE_URL:http://123.57.111.115}  # ← 修改：替换为服务器IP和端口
+    allowed-types:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - image/webp
+      - image/svg+xml
+      - application/pdf
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      - application/vnd.openxmlformats-officedocument.presentationml.presentation
+      - text/plain
+      - application/zip
+      - application/x-rar-compressed
