@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "operation-log")
+@ConfigurationProperties(prefix = "mok.operation-log")
 public class OperationLogConfig  {
     private Boolean enabled = true;
     private Boolean recordGet = true;

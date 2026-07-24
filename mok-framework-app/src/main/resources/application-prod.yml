@@ -26,9 +26,9 @@ spring:
       strict: true   # 生产环境建议严格匹配，防止误操作
       datasource:
         master:
-          url: ${PROD_DB_MASTER_URL}   # 示例: jdbc:mysql://prod-mysql-host:3306/prod_db?useSSL=true&serverTimezone=Asia/Shanghai
-          username: ${PROD_DB_MASTER_USER}
-          password: ${PROD_DB_MASTER_PASSWORD}
+          url: jdbc:mysql://${master.mysql.host}:${master.mysql.port}/**********?useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai
+          username: root
+          password: ${master.mysql.password}
           driver-class-name: com.mysql.cj.jdbc.Driver
           hikari:
             max-lifetime: 1800000       # 30分钟
@@ -37,9 +37,9 @@ spring:
             connection-timeout: 30000
             idle-timeout: 600000
         operationLog:
-          url: ${PROD_DB_OPERATION_LOG_URL}   # 示例: jdbc:mysql://prod-mysql-host:3306/prod_operation_log?useSSL=true&serverTimezone=Asia/Shanghai
-          username: ${PROD_DB_OPERATION_LOG_USER}
-          password: ${PROD_DB_OPERATION_LOG_PASSWORD}
+          url: jdbc:mysql://${master.mysql.host}:${master.mysql.port}/**********?useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai
+          username: root
+          password: ${master.mysql.password}
           driver-class-name: com.mysql.cj.jdbc.Driver
           hikari:
             max-lifetime: 1800000
@@ -53,9 +53,9 @@ spring:
   # ================================================================
   data:
     redis:
-      host: ${PROD_REDIS_HOST}         # 生产 Redis 地址
-      port: ${PROD_REDIS_PORT:6379}
-      password: ${PROD_REDIS_PASSWORD}
+      host: ${spring.data.redis.host}
+      port: 6379
+      password: ${spring.data.redis.password}
       database: 0                      # 生产环境建议使用默认库或规划好的库
       timeout: 5000ms
       lettuce:
@@ -69,10 +69,10 @@ spring:
   #  生产 RabbitMQ
   # ================================================================
   rabbitmq:
-    host: ${PROD_RABBITMQ_HOST}
-    port: ${PROD_RABBITMQ_PORT:5672}
-    username: ${PROD_RABBITMQ_USER}
-    password: ${PROD_RABBITMQ_PASSWORD}
+    host: ${spring.rabbitmq.host}
+    port: 5672
+    username: admin
+    password: ${spring.rabbitmq.password}
     virtual-host: ${PROD_RABBITMQ_VHOST:/}
     connection-timeout: 30000
     requested-heartbeat: 60           # 心跳保活
@@ -107,12 +107,12 @@ spring:
   # ================================================================
   ai:
     openai:
-      api-key: ${PROD_AI_API_KEY}
-      base-url: ${PROD_AI_BASE_URL:https://api.deepseek.com/}
+      api-key: ${spring.ai.openai.api-key}
+      base-url: https://api.deepseek.com/
       chat:
         options:
-          model: ${PROD_AI_MODEL:deepseek-v4-flash}
-          temperature: 0.7
+          model: deepseek-v4-flash
+          temperature: 0.3
 
 # ================================================================
 #  Sa-Token 生产环境配置
@@ -120,14 +120,14 @@ spring:
 sa-token:
   token-name: Authorization
   token-prefix: Bearer
-  timeout: 7200                     # 2小时，根据业务调整
+  timeout: 7200
   is-read-cookie: false
-  active-timeout: 1800              # 30分钟无操作冻结
+  active-timeout: -1
   is-concurrent: true
   is-share: false
   token-style: jwt
-  is-log: false                     # 关闭操作日志，减少开销
-  jwt-secret-key: ${PROD_SA_TOKEN_JWT_SECRET}   # 生产环境必须使用强随机密钥
+  is-log: true
+  jwt-secret-key: ${sa-token.jwt-secret-key}
   token-session-check-login: true
 
 # ================================================================
@@ -171,32 +171,42 @@ logging:
 # ================================================================
 #  操作日志配置
 # ================================================================
-operation-log:
-  enabled: true
-  record-get: false                 # 生产环境通常不记录 GET 请求，减少日志量
-  max-content-length: 500           # 限制内容长度，节省存储
+
 
 # ================================================================
-#  邮件服务（生产环境 SMTP）
-# ================================================================
-mail:
-  host: ${PROD_MAIL_HOST}
-  port: ${PROD_MAIL_PORT:465}
-  ssl-enable: true
-  starttls-enable: false
-  from: ${PROD_MAIL_FROM}
-  user: ${PROD_MAIL_USER}
-  password: ${PROD_MAIL_PASSWORD}
-
-# ================================================================
-#  自定义 AI 配置
+#  mok-framework 框架配置
 # ================================================================
 mok:
+  #  mok-framework ai配置
   ai:
     provider: ${PROD_AI_PROVIDER:deepseek}
     api-key: ${PROD_AI_API_KEY}     # 与 spring.ai.openai.api-key 保持一致或独立
     model: ${PROD_AI_MODEL:deepseek-v4-flash}
-    system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"
+  #  mok-framework 限流配置
+  ratelimiter:
+    enabled: true
+    redis-key-prefix:
+    ratelimit:
+    default-window: 60
+    default-limit: 10
+    default-lock-time: 10
+    cluster-mode: false
+    default-message: "请求过于频繁，请稍后再试"
+  #  mok-framework 系统启动相关配置
+  start:
+    systemStartCheckMail: true
+  #  mok-framework 操作日志配置
+  operation-log:
+    enabled: true
+    record-get: false                 # 生产环境通常不记录 GET 请求，减少日志量
+    max-content-length: 500           # 限制内容长度，节省存储
+  #  mok-framework 验证码配置
+  captcha:
+    width: 120
+    height: 40
+    length: 4        # 当 type = math 时，此参数无效
+    expire: 300
+    type: math       # math / char
 
 # ================================================================
 #  服务器端口建议通过环境变量 SERVER_PORT 覆盖，此处默认
@@ -217,7 +227,7 @@ file:
   storage:
     base-path: /data/uploads  # Docker容器内路径
     url-prefix: /api/uploads
-    base-url: ${FILE_BASE_URL:http://123.57.111.115}  # ← 修改：替换为服务器IP和端口
+    base-url: ${FILE_BASE_URL}  # ← 修改：替换为服务器IP和端口
     allowed-types:
       - image/jpeg
       - image/png

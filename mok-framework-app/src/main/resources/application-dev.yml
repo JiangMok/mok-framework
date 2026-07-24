@@ -1,232 +1,264 @@
-  # ============================================
-  # 开发环境配置 - 用于本地开发和调试
-  # ============================================
+# ============================================
+# 开发环境配置 - 用于本地开发和调试
+# ============================================
 
-  spring:
-    config:
-      import: optional:file:./env/dev-env.properties # 导入外部环境变量文件（缺失时不报错）
-    # 数据源配置 - 开发环境数据库
-    datasource:
-      dynamic:
-        primary: master                              # 默认数据源
-        strict: false                                # 是否严格匹配数据源（false 时未匹配到则使用默认数据源）
-        datasource:
-          # 主数据源（业务库）
-          master:
-            url: jdbc:mysql://${master.mysql.host}:${master.mysql.port}/mf_master_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-            username: root
-            password: ${master.mysql.password}       # 主库密码，来自外部环境变量
-            driver-class-name: com.mysql.cj.jdbc.Driver
-            hikari:
-              max-lifetime: 300000                   # 连接最大存活时间（毫秒）
-              maximum-pool-size: 20                  # 连接池最大连接数
-              minimum-idle: 5                        # 连接池最小空闲连接数
-              connection-timeout: 30000              # 获取连接超时时间（毫秒）
-          # 操作日志数据源
-          operationLog:
-            driver-class-name: com.mysql.cj.jdbc.Driver
-            url: jdbc:mysql://${operationLog.mysql.host}:${operationLog.mysql.port}/mf_operation_log_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-            username: root
-            password: ${operationLog.mysql.password} # 操作日志库密码
-            hikari:
-              max-lifetime: 300000
-              maximum-pool-size: 10
-              minimum-idle: 2
-              connection-timeout: 30000
-    # Elasticsearch 配置
-    elasticsearch:
-      uris: ${spring.elasticsearch.uri}               # ES 集群地址，来自环境变量
-      username: ${spring.elasticsearch.username}      # ES 用户名
-      password: 123456                                # ES 密码（开发环境固定值）
-    # Redis 配置 - 开发环境缓存
-    data:
-      redis:
-        host: localhost                               # Redis 服务器地址
-        port: 6379                                    # Redis 端口号
-        password: ${spring.data.redis.password}       # Redis 密码，来自环境变量
-        database: 3                                   # Redis 数据库索引（0-15）
-        timeout: 3000ms                               # 连接超时时间
-        lettuce:
-          pool:
-            max-active: 20                            # 连接池最大连接数
-            max-wait: -1ms                            # 最大等待时间（-1 表示无限等待）
-            max-idle: 8                               # 最大空闲连接数
-            min-idle: 0                               # 最小空闲连接数
-    # RabbitMQ 配置
-    rabbitmq:
-      # 基础连接配置
-      host: localhost                                 # RabbitMQ 服务器地址（开发环境使用本地）
-      port: 5672                                      # RabbitMQ 端口（默认 5672）
-      username: admin                                 # 用户名
-      password: ${spring.rabbitmq.password}           # 密码，来自环境变量
-      virtual-host: /                                 # 虚拟主机
+# ================================================================
+#  服务器端口建议通过环境变量 SERVER_PORT 覆盖，此处默认
+# ================================================================
 
-      # 连接池配置
-      connection-timeout: 30000                       # 连接超时时间（毫秒）
-      cache:
-        channel:
-          size: 50                                    # 通道缓存大小
-          checkout-timeout: 20000                     # 获取通道超时时间（毫秒）
-      #      connection:
-      #        mode: CHANNEL                              # 连接缓存模式
-      #        size: 10                                   # 连接池大小
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  tomcat:
+    uri-encoding: UTF-8
+    max-threads: 200
+    min-spare-threads: 10
 
-      # 生产者配置（消息发送方）
-      publisher-confirm-type: correlated              # 消息发送确认机制
-      publisher-returns: true                         # 启用消息返回机制
+spring:
+  config:
+    import: optional:file:./env/dev-env.properties # 导入外部环境变量文件（缺失时不报错）
+  # 数据源配置 - 开发环境数据库
+  datasource:
+    dynamic:
+      primary: master                              # 默认数据源
+      strict: false                                # 是否严格匹配数据源（false 时未匹配到则使用默认数据源）
+      # ================================================================
+      #  数据库 — 动态多数据源
+      # ================================================================
+      datasource:
+        # 主数据源（业务库）
+        master:
+          url: jdbc:mysql://${master.mysql.host}:${master.mysql.port}/mf_master_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+          username: root
+          password: ${master.mysql.password}       # 主库密码，来自外部环境变量
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          hikari:
+            max-lifetime: 300000                   # 连接最大存活时间（毫秒）
+            maximum-pool-size: 20                  # 连接池最大连接数
+            minimum-idle: 5                        # 连接池最小空闲连接数
+            connection-timeout: 30000              # 获取连接超时时间（毫秒）
+        # 操作日志数据源
+        operationLog:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://${operationLog.mysql.host}:${operationLog.mysql.port}/mf_operation_log_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+          username: root
+          password: ${operationLog.mysql.password} # 操作日志库密码
+          hikari:
+            max-lifetime: 300000
+            maximum-pool-size: 10
+            minimum-idle: 2
+            connection-timeout: 30000
 
-      # 消息模板配置
-      template:
-        mandatory: true                               # 当消息无法路由时返回给生产者
+  # ================================================================
+  #   Elasticsearch 配置
+  # ================================================================
+  elasticsearch:
+    uris: ${spring.elasticsearch.uri}               # ES 集群地址，来自环境变量
+    username: ${spring.elasticsearch.username}      # ES 用户名
+    password: 123456                                # ES 密码（开发环境固定值）
+  # ================================================================
+  #  Redis
+  # ================================================================
+  data:
+    redis:
+      host: localhost                               # Redis 服务器地址
+      port: 6379                                    # Redis 端口号
+      password: ${spring.data.redis.password}       # Redis 密码，来自环境变量
+      database: 3                                   # Redis 数据库索引（0-15）
+      timeout: 3000ms                               # 连接超时时间
+      lettuce:
+        pool:
+          max-active: 20                            # 连接池最大连接数
+          max-wait: -1ms                            # 最大等待时间（-1 表示无限等待）
+          max-idle: 8                               # 最大空闲连接数
+          min-idle: 0                               # 最小空闲连接数
+  # ================================================================
+  #  生产 RabbitMQ
+  # ================================================================
+  rabbitmq:
+    # 基础连接配置
+    host: localhost                                 # RabbitMQ 服务器地址（开发环境使用本地）
+    port: 5672                                      # RabbitMQ 端口（默认 5672）
+    username: admin                                 # 用户名
+    password: ${spring.rabbitmq.password}           # 密码，来自环境变量
+    virtual-host: /                                 # 虚拟主机
+    # 连接池配置
+    connection-timeout: 30000                       # 连接超时时间（毫秒）
+    cache:
+      channel:
+        size: 50                                    # 通道缓存大小
+        checkout-timeout: 20000                     # 获取通道超时时间（毫秒）
+    #      connection:
+    #        mode: CHANNEL                              # 连接缓存模式
+    #        size: 10                                   # 连接池大小
+    # 生产者配置（消息发送方）
+    publisher-confirm-type: correlated              # 消息发送确认机制
+    publisher-returns: true                         # 启用消息返回机制
+    # 消息模板配置
+    template:
+      mandatory: true                               # 当消息无法路由时返回给生产者
+      retry:
+        enabled: true                               # 启用发送重试
+        max-attempts: 3                             # 最大重试次数
+        initial-interval: 1000                      # 初始重试间隔（毫秒）
+    # 消费者配置（消息接收方）
+    listener:
+      simple:
+        acknowledge-mode: manual                    # 手动确认消息（更可靠）
+        concurrency: 2                              # 最小消费者数量
+        max-concurrency: 3                          # 最大消费者数量
+        prefetch: 5                                 # 每次预取的消息数量
+        default-requeue-rejected: false             # 拒绝时不重新入队
         retry:
-          enabled: true                               # 启用发送重试
-          max-attempts: 3                             # 最大重试次数
-          initial-interval: 1000                      # 初始重试间隔（毫秒）
+          enabled: true                             # 启用消费重试
+          max-attempts: 3                           # 最大重试次数
+          initial-interval: 3000                    # 初始重试间隔（毫秒）
+          max-interval: 10000                       # 最大重试间隔（毫秒）
+          multiplier: 2.0                           # 重试间隔乘数（每次间隔 *2）
 
-      # 消费者配置（消息接收方）
-      listener:
-        simple:
-          acknowledge-mode: manual                    # 手动确认消息（更可靠）
-          concurrency: 2                              # 最小消费者数量
-          max-concurrency: 3                          # 最大消费者数量
-          prefetch: 5                                 # 每次预取的消息数量
-          default-requeue-rejected: false             # 拒绝时不重新入队
-          retry:
-            enabled: true                             # 启用消费重试
-            max-attempts: 3                           # 最大重试次数
-            initial-interval: 3000                    # 初始重试间隔（毫秒）
-            max-interval: 10000                       # 最大重试间隔（毫秒）
-            multiplier: 2.0                           # 重试间隔乘数（每次间隔 *2）
-    #  elasticsearch:                                   # 注释掉的旧 ES 配置（备用）
-    #    uris: http://192.168.5.22:9200
-    ##    uris: http://192.168.77.152:9200
-    #    username: elastic
-    #    password: 123456
-    # Spring AI 整合配置
-    ai:
-      openai:
-        api-key: ${spring.ai.openai.api-key}          # AI 服务 API 密钥
-        base-url: https://api.deepseek.com/           # AI 接口基础地址（此处使用 DeepSeek）
-        chat:
-          options:
-            model: deepseek-v4-flash                  # 使用的模型名称
-            temperature: 0.3                          # 生成温度（0-1，越高越随机）
+  # ================================================================
+  #  Spring AI（生产环境使用自己的 API Key）
+  # ================================================================
+  ai:
+    openai:
+      api-key: ${spring.ai.openai.api-key}          # AI 服务 API 密钥
+      base-url: https://api.deepseek.com/           # AI 接口基础地址（此处使用 DeepSeek）
+      chat:
+        options:
+          model: deepseek-v4-flash                  # 使用的模型名称
+          temperature: 0.3                          # 生成温度（0-1，越高越随机）
 
-  ############## Sa-Token 配置 (文档: https://sa-token.cc) ##############
-  sa-token:
-    token-name: Authorization                        # Token 在请求头中的名称
-    token-prefix: Bearer                             # Token 前缀
-    timeout: 1800                                    # Token 有效期（单位：秒，30 分钟）
-    is-read-cookie: false                            # 是否从 Cookie 中读取 Token
-    active-timeout: -1                               # 最低活跃频率（-1 表示不限制，永不冻结）
-    is-concurrent: true                              # 是否允许同一账号多地同时登录
-    is-share: false                                  # 多人登录是否共用 token（false 表示各自独立）
-    token-style: jwt                                 # Token 风格，此处使用 JWT 格式
-    is-log: true                                     # 是否输出操作日志
-    jwt-secret-key: ${sa-token.jwt-secret-key}       # JWT 签名密钥，来自环境变量
-    token-session-check-login: true                  # 校验 Token 时是否检查登录状态
+# ================================================================
+#  Sa-Token 开发环境配置
+# ================================================================
+sa-token:
+  token-name: Authorization                        # Token 在请求头中的名称
+  token-prefix: Bearer                             # Token 前缀
+  timeout: 1800                                    # Token 有效期（单位：秒，30 分钟）
+  is-read-cookie: false                            # 是否从 Cookie 中读取 Token
+  active-timeout: -1                               # 最低活跃频率（-1 表示不限制，永不冻结）
+  is-concurrent: true                              # 是否允许同一账号多地同时登录
+  is-share: false                                  # 多人登录是否共用 token（false 表示各自独立）
+  token-style: jwt                                 # Token 风格，此处使用 JWT 格式
+  is-log: true                                     # 是否输出操作日志
+  jwt-secret-key: ${sa-token.jwt-secret-key}       # JWT 签名密钥，来自环境变量
+  token-session-check-login: true                  # 校验 Token 时是否检查登录状态
 
-  # MyBatis Plus 开发配置
-  mybatis-plus:
-    configuration:
-      map-underscore-to-camel-case: true              # 开启驼峰命名自动转换
-      log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl  # 使用 Slf4j 日志实现（开发环境）
-    global-config:
-      db-config:
-        logic-delete-field: isDeleted                # 逻辑删除字段名
-        logic-delete-value: 1                        # 逻辑删除值（已删除）
-        logic-not-delete-value: 0                    # 逻辑未删除值（未删除）
-    mapper-locations: classpath*:/mapper/*.xml        # Mapper XML 文件位置
-    type-aliases-package: com.mok.framework.*.entity  # 实体类别名包路径
+# ================================================================
+#  MyBatis-Plus 开发配置
+# ================================================================
 
-  # JWT 配置（已注释，改用 Sa-Token 实现）
-  #jwt:
-  #  secret: security-framework-secret-key-2024-01-01-change-in-production
-  #  token-expire: 7200000
-  #  refresh-token-expire: 604800000
-  #  header: Authorization
-  #  prefix: Bearer
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true              # 开启驼峰命名自动转换
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl  # 使用 Slf4j 日志实现（开发环境）
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted                # 逻辑删除字段名
+      logic-delete-value: 1                        # 逻辑删除值（已删除）
+      logic-not-delete-value: 0                    # 逻辑未删除值（未删除）
+  mapper-locations: classpath*:/mapper/*.xml        # Mapper XML 文件位置
+  type-aliases-package: com.mok.framework.*.entity  # 实体类别名包路径
 
-  # 验证码配置（已注释）
-  #captcha:
-  #  width: 120
-  #  height: 40
-  #  length: 4
-  #  expire: 300
-  #  type: math
+# ================================================================
+#  # API 文档配置（开发环境开启）
+# ================================================================
+springdoc:
+  api-docs:
+    path: /v3/api-docs                            # OpenAPI 文档接口路径
+  swagger-ui:
+    path: /swagger-ui.html                        # Swagger UI 访问路径
+    operations-sorter: method                     # 按 HTTP 方法排序
+    tags-sorter: alpha                            # 按字母排序标签
+    display-request-duration: true                # 显示请求耗时
+    doc-expansion: none                           # 文档默认不展开
 
-  # API 文档配置（开发环境开启）
-  springdoc:
-    api-docs:
-      path: /v3/api-docs                            # OpenAPI 文档接口路径
-    swagger-ui:
-      path: /swagger-ui.html                        # Swagger UI 访问路径
-      operations-sorter: method                     # 按 HTTP 方法排序
-      tags-sorter: alpha                            # 按字母排序标签
-      display-request-duration: true                # 显示请求耗时
-      doc-expansion: none                           # 文档默认不展开
+# ================================================================
+#  日志策略 — 生产环境减少日志量
+# ================================================================
+logging:
+  level:
+    com.mok.framework: DEBUG                       # 应用包日志级别
+    org.springframework.security: DEBUG            # Spring Security 日志级别
+    org.springframework.web: DEBUG                 # Spring Web 日志级别
+    org.springframework.boot.autoconfigure: DEBUG  # Spring Boot 自动配置日志级别
+    root: info                                    # 根日志级别
+  file:
+    name: logs/mok-framework.log                   # 日志文件路径
+    max-size: 10MB                                 # 单个日志文件最大大小
+    max-history: 30                                # 保留日志文件天数
 
-  # 日志配置 - 开发环境详细日志
-  logging:
-    level:
-      com.mok.framework: DEBUG                       # 应用包日志级别
-      org.springframework.security: DEBUG            # Spring Security 日志级别
-      org.springframework.web: DEBUG                 # Spring Web 日志级别
-      org.springframework.boot.autoconfigure: DEBUG  # Spring Boot 自动配置日志级别
-      root: info                                    # 根日志级别
-    file:
-      name: logs/mok-framework.log                   # 日志文件路径
-      max-size: 10MB                                 # 单个日志文件最大大小
-      max-history: 30                                # 保留日志文件天数
+# 应用自定义配置（已注释）
+#system:
+#  sensitive-fields:
+#    - password
+#    - pwd
+#    - confirmPassword
+#    - oldPassword
+#    - newPassword
+#    - token
+#    - secret
+#    - apiKey
 
-  # 应用自定义配置（已注释）
-  #system:
-  #  sensitive-fields:
-  #    - password
-  #    - pwd
-  #    - confirmPassword
-  #    - oldPassword
-  #    - newPassword
-  #    - token
-  #    - secret
-  #    - apiKey
+# ============================================
+# 消息队列相关业务配置
+# ============================================
 
-  # 文件存储配置（已注释）
-  #file:
-  #  storage:
-  #    base-path: ${user.home}/mok-uploads
-  #    url-prefix: /api/uploads
-  #    base-url: http://localhost:8080
-  #    allowed-types:
-  #      - image/jpeg
-  #      - image/png
-  #      - image/gif
-  #      - application/pdf
-  #      - application/msword
-  #      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+# 消息队列监控（开发环境已注释）
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,rabbit
+#  endpoint:
+#    rabbit:
+#      enabled: true
+#    health:
+#      show-details: always
 
-  # ============================================
-  # 消息队列相关业务配置
-  # ============================================
-
-  # 操作日志配置
+# ================================================================
+#  mok-framework 框架配置
+# ================================================================
+mok:
+  #  mok-framework ai配置
+  ai:
+    provider: deepseek                             # AI 服务提供方（deepseek / openai）
+    api-key: ${mok.ai.api-key}                     # AI 服务 API 密钥
+    model: deepseek-v4-flash                       # 使用的模型名称
+    system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"  # AI 系统提示词
+  #  mok-framework 限流配置
+  ratelimiter:
+    enabled: true                          # 是否启用限流模块
+    redis-key-prefix: "rate:limit:"        # Redis限流Key前缀
+    duplicate-key-prefix: "duplicate:submit:" # 防重复提交Key前缀
+    default-window: 60                     # 默认时间窗口（秒）
+    default-limit: 10                      # 默认限流次数
+    default-duplicate-lock-time: 3         # 默认防重复提交锁定时间（秒）
+    cluster-mode: false                    # 是否集群模式
+    default-rate-limit-message: "请求过于频繁，请稍后再试" # 默认限流提示信息
+    default-duplicate-message: "请勿重复提交" # 默认防重复提交提示信息
+    enable-monitor: true                   # 是否启用监控端点
+    monitor-path: "/actuator/ratelimit"    # 监控端点路径
+  #  mok-framework 系统启动相关配置
+  start:
+    systemStartCheckMail: false
+  #  mok-framework 操作日志配置
   operation-log:
     enabled: true                                   # 是否启用操作日志
     record-get: true                                # 是否记录 GET 请求
     max-content-length: 2000                        # 日志内容最大长度（字符）
+  #  mok-framework 验证码配置
+  captcha:
+    width: 120
+    height: 40
+    length: 4        # 当 type = math 时，此参数无效
+    expire: 300
+    type: math       # math / char
 
-  # 消息队列监控（开发环境已注释）
-  #management:
-  #  endpoints:
-  #    web:
-  #      exposure:
-  #        include: health,rabbit
-  #  endpoint:
-  #    rabbit:
-  #      enabled: true
-  #    health:
-  #      show-details: always
-
+# ================================================================
+#  文件存储配置
+# ================================================================
 file:
   storage:
     base-path: ${user.home}/mok-uploads
@@ -239,26 +271,3 @@ file:
       - application/pdf
       - application/msword
       - application/vnd.openxmlformats-officedocument.wordprocessingml.document
-
-  # 自定义 AI 助手配置
-  mok:
-    ai:
-      provider: deepseek                             # AI 服务提供方（deepseek / openai）
-      api-key: ${mok.ai.api-key}                     # AI 服务 API 密钥
-      model: deepseek-v4-flash                       # 使用的模型名称
-      system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"  # AI 系统提示词
-    #限流模块
-    ratelimiter:
-      enabled: true                          # 是否启用限流模块
-      redis-key-prefix: "rate:limit:"        # Redis限流Key前缀
-      duplicate-key-prefix: "duplicate:submit:" # 防重复提交Key前缀
-      default-window: 60                     # 默认时间窗口（秒）
-      default-limit: 10                      # 默认限流次数
-      default-duplicate-lock-time: 3         # 默认防重复提交锁定时间（秒）
-      cluster-mode: false                    # 是否集群模式
-      default-rate-limit-message: "请求过于频繁，请稍后再试" # 默认限流提示信息
-      default-duplicate-message: "请勿重复提交" # 默认防重复提交提示信息
-      enable-monitor: true                   # 是否启用监控端点
-      monitor-path: "/actuator/ratelimit"    # 监控端点路径
-    start:
-      systemStartCheckMail: false

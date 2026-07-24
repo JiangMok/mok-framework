@@ -1,5 +1,6 @@
 # ================================================================
 #  [1] 开发环境 Profile 标识 & 敏感配置导入
+#  !!! 注意 : 使用此配置文件需要系修改application.yml里的操作日志保存位置未非es
 # ================================================================
 spring:
   config:
@@ -185,26 +186,6 @@ logging:
     max-history: 30    # 保留日志文件天数
 
 # ================================================================
-# [11] 操作日志业务配置
-# ================================================================
-operation-log:
-  enabled: true                 # 是否启用操作日志
-  record-get: true              # 是否记录GET请求
-  max-content-length: 2000      # 日志内容最大长度
-
-# ================================================================
-# [12] 邮件服务配置（Hutool MailUtil 使用）
-# ================================================================
-#mail:
-#  host: smtp.163.com
-#  port: 465
-#  ssl-enable: true
-#  starttls-enable: false
-#  from: mokservice@163.com
-#  user: mokservice@163.com
-#  password: ${mail.password}   # 敏感信息占位，实际值在 dev-env.properties
-
-# ================================================================
 # [13] 自定义业务配置
 # ================================================================
 mok:
@@ -236,6 +217,17 @@ mok:
     monitor-path: "/actuator/ratelimit"    # 监控端点路径
   start:
     systemStartCheckMail: false
+  operation-log:
+    enabled: true                 # 是否启用操作日志
+    record-get: true              # 是否记录GET请求
+    max-content-length: 2000      # 日志内容最大长度
+  #  mok-framework 验证码配置
+  captcha:
+    width: 120
+    height: 40
+    length: 4        # 当 type = math 时，此参数无效
+    expire: 300
+    type: math       # math / char
 
 # ================================================================
 # [14] 文件上传配置
