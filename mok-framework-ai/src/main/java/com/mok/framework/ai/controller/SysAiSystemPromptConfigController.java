@@ -7,6 +7,9 @@ import com.mok.framework.common.annotation.OperationLog;
 import com.mok.framework.common.enums.BusinessType;
 import com.mok.framework.model.dto.AiSystemPromptConfigDTO;
 import com.mok.framework.model.entity.SysAiSystemPromptConfig;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -31,6 +34,7 @@ public class SysAiSystemPromptConfigController {
 
     @Operation(summary = "分页查询")
     @OperationLog(title = "分页查询AI系统提示词配置", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/page")
     public R<Page<SysAiSystemPromptConfig>> page(
             @RequestParam(defaultValue = "1") long pageNum,
@@ -40,6 +44,7 @@ public class SysAiSystemPromptConfigController {
 
     @Operation(summary = "按ID查询")
     @OperationLog(title = "查询AI系统提示词配置详情", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
     public R<SysAiSystemPromptConfig> getById(@PathVariable String id) {
         return R.ok(service.getById(id));
@@ -47,6 +52,8 @@ public class SysAiSystemPromptConfigController {
 
     @Operation(summary = "新增")
     @OperationLog(title = "新增AI系统提示词配置", businessType = BusinessType.INSERT)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping
     public R<Void> create(@Valid @RequestBody AiSystemPromptConfigDTO dto) {
         service.create(dto);
@@ -55,6 +62,8 @@ public class SysAiSystemPromptConfigController {
 
     @Operation(summary = "更新")
     @OperationLog(title = "更新AI系统提示词配置", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PutMapping
     public R<Void> update(@Valid @RequestBody AiSystemPromptConfigDTO dto) {
         service.update(dto);
@@ -63,6 +72,7 @@ public class SysAiSystemPromptConfigController {
 
     @Operation(summary = "删除")
     @OperationLog(title = "删除AI系统提示词配置", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable String id) {
         service.delete(id);

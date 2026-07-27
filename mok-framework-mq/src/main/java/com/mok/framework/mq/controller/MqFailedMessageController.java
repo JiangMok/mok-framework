@@ -7,6 +7,9 @@ import com.mok.framework.common.R;
 import com.mok.framework.common.annotation.OperationLog;
 import com.mok.framework.common.enums.BusinessType;
 import com.mok.framework.model.entity.MqFailedMessage;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import com.mok.framework.mq.service.MqFailedMessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,6 +37,7 @@ public class MqFailedMessageController {
 
     @Operation(summary = "分页查询MQ失败消息")
     @OperationLog(title = "MQ失败消息管理", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:mqFailedMessage:query")
     public R<PageResult<MqFailedMessage>> page(@RequestBody PageParam param) {
@@ -41,6 +45,7 @@ public class MqFailedMessageController {
     }
 
     @Operation(summary = "根据ID查询MQ失败消息详情")
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
     @SaCheckPermission("system:mqFailedMessage:query")
     public R<MqFailedMessage> getById(@PathVariable String id) {
@@ -49,6 +54,7 @@ public class MqFailedMessageController {
 
     @Operation(summary = "删除MQ失败消息")
     @OperationLog(title = "MQ失败消息管理", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/{id}")
     @SaCheckPermission("system:mqFailedMessage:delete")
     public R<Void> delete(@PathVariable String id) {
@@ -58,6 +64,8 @@ public class MqFailedMessageController {
 
     @Operation(summary = "标记MQ失败消息为已处理")
     @OperationLog(title = "MQ失败消息管理", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PutMapping("/{id}/resolve")
     @SaCheckPermission("system:mqFailedMessage:edit")
     public R<Void> resolve(

@@ -17,6 +17,9 @@ import com.mok.framework.model.dto.UserDTO;
 import com.mok.framework.model.dto.UserUpdateDto;
 import com.mok.framework.model.entity.RoleEntity;
 import com.mok.framework.model.entity.UserEntity;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -63,6 +66,7 @@ public class UserController {
      **/
     @Operation(summary = "分页查询用户信息")
     @OperationLog(title = "分页查询用户信息", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:user:list")
     public R<PageResult<UserEntity>> page(@RequestBody @Valid PageParam param) {
@@ -78,6 +82,7 @@ public class UserController {
      **/
     @Operation(summary = "根据 id 查询用户信息")
     @OperationLog(title = "根据 id 查询用户信息", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
     @SaCheckPermission("system:user:query")
     public R<Map<String, Object>> detail(@PathVariable("id") String id) {
@@ -119,6 +124,8 @@ public class UserController {
      **/
     @Operation(summary = "创建用户")
     @OperationLog(title = "创建用户", businessType = BusinessType.INSERT)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/add")
     @SaCheckPermission("system:user:add")
     public R<String> create(@RequestBody @Valid UserDTO userDTO) {
@@ -166,6 +173,8 @@ public class UserController {
      **/
     @Operation(summary = "修改用户信息")
     @OperationLog(title = "修改用户信息", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/update")
     @SaCheckPermission("system:user:edit")
     public R<String> update(@RequestBody @Valid UserUpdateDto userUpdateDto) {
@@ -219,6 +228,7 @@ public class UserController {
      **/
     @Operation(summary = "删除用户信息")
     @OperationLog(title = "删除用户信息", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/delete/{id}")
     @SaCheckPermission("system:user:delete")
     public R<String> delete(@PathVariable("id") String id) {
@@ -261,6 +271,7 @@ public class UserController {
      **/
     @Operation(summary = "修改用户状态")
     @OperationLog(title = "修改用户状态", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @PutMapping("updateUserStatus/{id}/{status}")
     @SaCheckPermission("system:user:edit")
     public R<String> updateStatus(
@@ -306,6 +317,8 @@ public class UserController {
      **/
     @Operation(summary = "重置用户密码")
     @OperationLog(title = "重置用户密码", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PutMapping("/resetPwd/{userId}")
     @SaCheckPermission("system:user:edit")
     public R<String> resetUserPwdByUserId(@PathVariable("userId") String userId) {
@@ -337,6 +350,8 @@ public class UserController {
      **/
     @Operation(summary = "更改用户密码")
     @OperationLog(title = "更改用户密码", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/updatePwd")
     @SaCheckPermission("system:user:edit")
     public R<String> updateUserPwd(@RequestBody @Valid UserUpdateDto userUpdateDto) {

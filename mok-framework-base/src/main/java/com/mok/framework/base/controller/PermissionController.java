@@ -11,6 +11,9 @@ import com.mok.framework.common.annotation.OperationLog;
 import com.mok.framework.common.enums.BusinessType;
 import com.mok.framework.model.dto.PermissionDTO;
 import com.mok.framework.model.entity.PermissionEntity;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,6 +47,7 @@ public class PermissionController {
 
     @Operation(summary = "分页查询权限列表")
     @OperationLog(title = "分页查询权限", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:permission:query")
     public R<PageResult<PermissionEntity>> page(@RequestBody @Valid PageParam param) {
@@ -58,6 +62,7 @@ public class PermissionController {
      * @return: com.mok.framework.common.R<java.util.List < java.util.Map < java.lang.String, java.lang.Object>>>
      **/
     @Operation(summary = "获取权限树")
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/tree")
     @OperationLog(title = "获取权限树", businessType = BusinessType.QUERY)
     @SaCheckPermission("system:permission:query")
@@ -75,6 +80,7 @@ public class PermissionController {
      **/
     @Operation(summary = "获取菜单树")
     @OperationLog(title = "获取菜单树", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/menu-tree")
     @SaCheckPermission("system:permission:query")
     public R<List<Map<String, Object>>> getMenuTree() {
@@ -91,6 +97,7 @@ public class PermissionController {
      **/
     @Operation(summary = "获取当前用户菜单")
     @OperationLog(title = "获取当前用户", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/my-menus")
     @SaCheckPermission("system:permission:query")
     public R<List<Map<String, Object>>> getMyMenus() {
@@ -107,6 +114,7 @@ public class PermissionController {
      **/
     @Operation(summary = "获取接口权限列表")
     @OperationLog(title = "获取接口权限列表", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/apis")
     @SaCheckPermission("system:permission:query")
     public R<List<PermissionEntity>> getApiPermissions() {
@@ -121,6 +129,7 @@ public class PermissionController {
 
     @Operation(summary = "获取权限列表")
     @OperationLog(title = "获取权限列表", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/getByUserId")
     @SaCheckPermission("system:permission:query")
     public R<List<PermissionEntity>> getApiPermissionsByUserId() {
@@ -142,6 +151,7 @@ public class PermissionController {
      **/
     @Operation(summary = "获取权限详情")
     @OperationLog(title = "获取权限详情", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
     @SaCheckPermission("system:permission:query")
     public R<PermissionEntity> getPermissionDetail(
@@ -167,6 +177,8 @@ public class PermissionController {
      **/
     @Operation(summary = "创建权限")
     @OperationLog(title = "创建权限", businessType = BusinessType.INSERT)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/add")
     @SaCheckPermission("system:permission:add")
     public R<String> createPermission(@RequestBody @Valid PermissionDTO permissionDTO) {
@@ -183,6 +195,8 @@ public class PermissionController {
      **/
     @Operation(summary = "更新权限")
     @OperationLog(title = "更新权限", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PutMapping("/update")
     @SaCheckPermission("system:permission:edit")
     public R<String> updatePermission(@RequestBody @Valid PermissionDTO permissionDTO) {
@@ -199,6 +213,7 @@ public class PermissionController {
      **/
     @Operation(summary = "删除权限")
     @OperationLog(title = "删除权限", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/delete/{id}")
     @SaCheckPermission("system:permission:delete")
     public R<String> deletePermission(
@@ -217,6 +232,7 @@ public class PermissionController {
      **/
     @Operation(summary = "获取指定类型的权限")
     @OperationLog(title = "获取指定类型的权限", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/type/{type}")
     @SaCheckPermission("system:permission:query")
     public R<List<PermissionEntity>> getPermissionsByType(
@@ -240,6 +256,7 @@ public class PermissionController {
      **/
     @Operation(summary = "通过角色ID获取权限")
     @OperationLog(title = "通过角色ID获取权限", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/getByRoleId/{roleId}")
     @SaCheckPermission("system:permission:query")
     public R<List<PermissionEntity>> selectPermissionsByRoleId(@PathVariable("roleId") String roleId) {

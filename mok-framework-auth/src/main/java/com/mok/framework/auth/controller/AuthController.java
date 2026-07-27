@@ -14,6 +14,9 @@ import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.dto.LoginRequest;
 import com.mok.framework.model.dto.LoginResponse;
 import com.mok.framework.model.entity.UserEntity;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -53,6 +56,8 @@ public class AuthController {
      * @return
      */
     @OperationLog(title = "用户登录", businessType = BusinessType.LOGIN)
+    @RateLimit(scope = RateLimitScope.IP, limit = 5, message = "登录请求过于频繁，请稍后重试")
+    @PreventDuplicate(lockTime = 5, message = "请勿重复提交登录请求")
     @PostMapping("/login")
     public R<LoginResponse> loadUser(@RequestBody LoginRequest loginRequest) {
         //验证验证码
@@ -108,6 +113,8 @@ public class AuthController {
      * @return
      */
     @OperationLog(title = "刷新token", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 10, message = "刷新过于频繁，请稍后重试")
+    @PreventDuplicate(lockTime = 3, message = "请勿重复刷新Token")
     @PostMapping("/refresh")
     public R<LoginResponse> refreshToken(@RequestParam String refreshToken) {
         // 解析 refreshToken 获取用户id

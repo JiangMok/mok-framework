@@ -5,6 +5,9 @@ import cn.hutool.core.util.IdUtil;
 import com.mok.framework.ai.service.SpringAiService;
 import com.mok.framework.common.R;
 import com.mok.framework.model.entity.SpringAiEntity;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -35,25 +38,27 @@ public class SpringAiController {
      * @param: [userInput]
      * @return: com.mok.framework.common.R<java.lang.String>
      **/
-    @SaIgnore
+    @RateLimit(scope = RateLimitScope.USER, limit = 5, message = "AI调用过于频繁，请稍后重试")
+    @PreventDuplicate(lockTime = 5, message = "请勿重复提交AI请求")
     @PostMapping("/syncChat")
     public R<String> syncChat(@RequestBody SpringAiEntity springAiEntity) {
         return R.ok(springAiService.syncChat(springAiEntity));
     }
 
-    @SaIgnore
+    @RateLimit(scope = RateLimitScope.USER, limit = 5, message = "AI调用过于频繁，请稍后重试")
+    @PreventDuplicate(lockTime = 5, message = "请勿重复提交AI请求")
     @PostMapping(value = "/streamChat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> streamChat(@RequestBody SpringAiEntity springAiEntity) {
         return springAiService.chatFlux(springAiEntity);
     }
 
-    @SaIgnore
+    @RateLimit(scope = RateLimitScope.USER, limit = 30)
     @GetMapping("/history/{conversationId}")
     public R<List<Message>> getHistory(@PathVariable String conversationId) {
         return R.ok(springAiService.getHistoryByConversationId(conversationId));
     }
 
-    @SaIgnore
+    @RateLimit(scope = RateLimitScope.USER, limit = 30)
     @GetMapping("/getConversationId")
     public R<SpringAiEntity> getConversationId() {
         SpringAiEntity springAiEntity = new SpringAiEntity();
@@ -61,7 +66,7 @@ public class SpringAiController {
         return R.ok(springAiEntity);
     }
 
-    @SaIgnore
+    @RateLimit(scope = RateLimitScope.USER, limit = 30)
     @GetMapping("/getAllConversationIds")
     public R<List<String>> getAllConversationIds() {
         return R.ok(springAiService.getAllConversationIds());

@@ -8,6 +8,9 @@ import com.mok.framework.common.annotation.OperationLog;
 import com.mok.framework.common.enums.BusinessType;
 import com.mok.framework.operationLog.service.OperationLogService;
 import com.mok.framework.model.entity.OperationLogEntity;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,6 +38,7 @@ public class OperationLogController {
 
     @Operation(summary = "分页查询操作日志")
     @OperationLog(title = "分页查询操作日志", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:log:query")
     public R<PageResult<OperationLogEntity>> page(@RequestBody PageParam param) {
@@ -50,6 +54,8 @@ public class OperationLogController {
      **/
     @Operation(summary = "清理历史日志")
     @OperationLog(title = "清除历史日志", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 10, message = "清理操作过于频繁，请稍后重试")
+    @PreventDuplicate(lockTime = 5, message = "请勿重复执行清理操作")
     @DeleteMapping("/clean")
     @SaCheckPermission("system:log:delete")
     public R<String> cleanLogs(
@@ -68,6 +74,7 @@ public class OperationLogController {
      **/
     @Operation(summary = "清理一条日志")
     @OperationLog(title = "清理一条日志", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/delete/{id}")
     @SaCheckPermission("system:log:delete")
     public R<String> deleteById(@PathVariable("id") String id) {

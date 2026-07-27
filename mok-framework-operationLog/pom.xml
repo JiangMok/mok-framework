@@ -36,6 +36,13 @@
             <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
         </dependency>
 
+        <!-- 限流模块 -->
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-ratelimiter</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
 </project>

@@ -6,6 +6,9 @@ import com.mok.framework.model.dto.AiAnalysisRequest;
 import com.mok.framework.model.enums.AiAnalysisRequestType;
 import com.mok.framework.mq.service.MqFailedMessageService;
 import com.mok.framework.operationLog.service.OperationLogService;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,6 +49,8 @@ public class AiAnalysisController {
      * @param: [aiAnalysisRequest]
      * @return: org.springframework.web.servlet.mvc.method.annotation.SseEmitter
     **/
+    @RateLimit(scope = RateLimitScope.USER, limit = 5, message = "AI调用过于频繁，请稍后重试")
+    @PreventDuplicate(lockTime = 5, message = "请勿重复提交AI请求")
     @PostMapping(value = "/analysis", produces = MediaType.TEXT_EVENT_STREAM_VALUE) // 接收 POST 请求，响应为 SSE 事件流
     public SseEmitter analysis(@RequestBody AiAnalysisRequest aiAnalysisRequest) { // 请求体为 JSON map
         // 获取查询数据的ID

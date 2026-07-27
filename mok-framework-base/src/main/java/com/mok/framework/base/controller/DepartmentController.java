@@ -11,6 +11,9 @@ import com.mok.framework.common.enums.BusinessType;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.dto.DepartmentDTO;
 import com.mok.framework.model.entity.DepartmentEntity;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -43,6 +46,7 @@ public class DepartmentController {
      */
     @Operation(summary = "获取部门树")
     @OperationLog(title = "获取部门树", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/tree")
     @SaCheckPermission("system:dept:query")
     public R<List<DepartmentDTO>> getDeptTree() {
@@ -54,6 +58,7 @@ public class DepartmentController {
      */
     @Operation(summary = "获取部门范围树")
     @OperationLog(title = "获取部门范围树", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/tree/scoped")
     @SaCheckPermission("system:dept:query")
     public R<List<DepartmentDTO>> getScopedDeptTree() {
@@ -66,6 +71,7 @@ public class DepartmentController {
      */
     @Operation(summary = "分页查询部门列表")
     @OperationLog(title = "分页查询部门", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/list")
     @SaCheckPermission("system:dept:list")
     public R<PageResult<DepartmentEntity>> page(@RequestBody @Valid PageParam param) {
@@ -77,6 +83,7 @@ public class DepartmentController {
      */
     @Operation(summary = "通过ID获取部门详情")
     @OperationLog(title = "通过ID获取部门详情", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
     @SaCheckPermission("system:dept:query")
     public R<DepartmentEntity> getDeptDetail(
@@ -96,6 +103,8 @@ public class DepartmentController {
      */
     @Operation(summary = "新增部门")
     @OperationLog(title = "新增部门", businessType = BusinessType.INSERT)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/add")
     @SaCheckPermission("system:dept:add")
     public R<String> createDept(@RequestBody @Valid DepartmentDTO departmentDTO) {
@@ -108,6 +117,8 @@ public class DepartmentController {
      */
     @Operation(summary = "更新部门")
     @OperationLog(title = "更新部门", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PutMapping("/update")
     @SaCheckPermission("system:dept:edit")
     public R<String> updateDept(@RequestBody @Valid DepartmentDTO departmentDTO) {
@@ -125,6 +136,7 @@ public class DepartmentController {
      */
     @Operation(summary = "删除部门")
     @OperationLog(title = "删除部门", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/delete/{id}")
     @SaCheckPermission("system:dept:delete")
     public R<String> deleteDept(

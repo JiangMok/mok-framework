@@ -43,5 +43,12 @@
             <version>${commons-io.version}</version>
         </dependency>
 
+        <!-- 限流模块 -->
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-ratelimiter</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 </project>

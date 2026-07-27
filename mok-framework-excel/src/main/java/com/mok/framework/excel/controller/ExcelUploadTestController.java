@@ -5,6 +5,9 @@ import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.excel.entity.ExcelUploadTestEntity;
 import com.mok.framework.excel.listener.ExcelUploadTestListener;
 import com.mok.framework.excel.service.ExcelUploadTestService;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.fesod.sheet.FesodSheet;
 import org.slf4j.Logger;
@@ -27,6 +30,8 @@ public class ExcelUploadTestController {
         this.ExcelUploadTestService = ExcelUploadTestService;
     }
 
+    @RateLimit(scope = RateLimitScope.USER, limit = 3, message = "Excel上传过于频繁，请稍后重试")
+    @PreventDuplicate(lockTime = 5, message = "请勿重复上传Excel")
     @PostMapping("/upload")
     public R<String> upload(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
@@ -49,6 +54,7 @@ public class ExcelUploadTestController {
     }
 
 
+    @RateLimit(scope = RateLimitScope.USER, limit = 3, message = "Excel下载过于频繁，请稍后重试")
     @GetMapping("/download")
     public void download(HttpServletResponse response) throws IOException {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

@@ -40,6 +40,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+
+        <!-- 限流模块 -->
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-ratelimiter</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
 </project>

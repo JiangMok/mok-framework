@@ -12,6 +12,9 @@ import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.dto.RoleDTO;
 import com.mok.framework.model.entity.PermissionEntity;
 import com.mok.framework.model.entity.RoleEntity;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -54,6 +57,7 @@ public class RoleController {
      **/
     @Operation(summary = "分页查询角色列表")
     @OperationLog(title = "分页查询角色", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:role:query")
     public R<PageResult<RoleEntity>> page(@RequestBody @Valid PageParam param) {
@@ -69,6 +73,7 @@ public class RoleController {
      **/
     @Operation(summary = "获取所有可用角色")
     @OperationLog(title = "获取所有可用角色", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/all")
     @SaCheckPermission("system:role:query")
     public R<List<RoleEntity>> getAllRoles() {
@@ -84,6 +89,7 @@ public class RoleController {
      **/
     @Operation(summary = "通过 id 获取角色详情")
     @OperationLog(title = "通过ID获取角色详情", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
     @SaCheckPermission("system:role:query")
     public R<Map<String, Object>> getRoleDetail(
@@ -116,6 +122,8 @@ public class RoleController {
      **/
     @Operation(summary = "创建角色")
     @OperationLog(title = "创建角色", businessType = BusinessType.INSERT)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/add")
     @SaCheckPermission("system:role:add")
     public R<String> createRole(@RequestBody @Valid RoleDTO roleDTO) {
@@ -134,6 +142,8 @@ public class RoleController {
      **/
     @Operation(summary = "更新角色")
     @OperationLog(title = "更新角色", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PutMapping("/update")
     @SaCheckPermission("system:role:edit")
     public R<String> updateRole(@RequestBody @Valid RoleDTO roleDTO) {
@@ -152,6 +162,7 @@ public class RoleController {
      **/
     @Operation(summary = "删除角色")
     @OperationLog(title = "删除角色", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/delete/{id}")
     @SaCheckPermission("system:role:delete")
     public R<String> deleteRole(@Parameter(description = "角色ID") @PathVariable("id") String id) {
@@ -170,6 +181,7 @@ public class RoleController {
      **/
     @Operation(summary = "修改角色状态")
     @OperationLog(title = "修改角色状态", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @PutMapping("/{id}/status")
     @SaCheckPermission("system:role:edit")
     public R<String> updateStatus(
@@ -206,6 +218,7 @@ public class RoleController {
      **/
     @Operation(summary = "获取权限树")
     @OperationLog(title = "获取权限树", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/permission-tree")
     @SaCheckPermission("system:role:query")
     public R<List<Map<String, Object>>> getPermissionTree() {
@@ -222,6 +235,8 @@ public class RoleController {
      **/
     @Operation(summary = "分配角色权限")
     @OperationLog(title = "分配角色权限", businessType = BusinessType.INSERT)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/{id}/permissions")
     @SaCheckPermission("system:role:edit")
     public R<String> assignPermissions(
@@ -240,6 +255,7 @@ public class RoleController {
      **/
     @Operation(summary = "获取用户角色列表")
     @OperationLog(title = "获取用户角色列表", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/user/{userId}")
     @SaCheckPermission("system:user:query")
     public R<List<RoleEntity>> getUserRoles(

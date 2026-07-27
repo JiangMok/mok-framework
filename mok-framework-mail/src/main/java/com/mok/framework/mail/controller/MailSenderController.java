@@ -6,6 +6,9 @@ import com.mok.framework.common.enums.BusinessType;
 import com.mok.framework.mail.service.MailSenderService;
 import com.mok.framework.model.dto.MailSenderDTO;
 import com.mok.framework.model.entity.MailSender;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,6 +32,7 @@ public class MailSenderController {
     }
 
     @Operation(summary = "获取发件箱配置")
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping
     public R<MailSender> getConfig() {
         return R.ok(mailSenderService.getConfig());
@@ -36,6 +40,8 @@ public class MailSenderController {
 
     @Operation(summary = "更新发件箱配置（热刷新，无需重启）")
     @OperationLog(title = "发件箱配置", businessType = BusinessType.UPDATE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PutMapping
     public R<Void> updateConfig(@Valid @RequestBody MailSenderDTO dto) {
         mailSenderService.updateConfig(dto);

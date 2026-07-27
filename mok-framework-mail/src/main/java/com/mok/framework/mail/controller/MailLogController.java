@@ -8,6 +8,8 @@ import com.mok.framework.common.annotation.OperationLog;
 import com.mok.framework.common.enums.BusinessType;
 import com.mok.framework.mail.service.MailLogService;
 import com.mok.framework.model.entity.MailLog;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +33,7 @@ public class MailLogController {
 
     @Operation(summary = "分页查询邮件日志")
     @OperationLog(title = "邮件日志管理", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:mailLog:query")
     public R<PageResult<MailLog>> page(@RequestBody PageParam param) {
@@ -38,6 +41,7 @@ public class MailLogController {
     }
 
     @Operation(summary = "根据ID查询邮件日志详情")
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
     @SaCheckPermission("system:mailLog:query")
     public R<MailLog> getById(@PathVariable String id) {
@@ -46,6 +50,7 @@ public class MailLogController {
 
     @Operation(summary = "删除邮件日志")
     @OperationLog(title = "邮件日志管理", businessType = BusinessType.DELETE)
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/{id}")
     @SaCheckPermission("system:mailLog:delete")
     public R<Void> delete(@PathVariable String id) {

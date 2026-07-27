@@ -12,6 +12,9 @@ import com.mok.framework.file.service.FileService;
 import com.mok.framework.model.dto.BatchDeleteRequest;
 import com.mok.framework.model.dto.FileUploadResponse;
 import com.mok.framework.model.entity.FileEntity;
+import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
+import com.mok.framework.ratelimiter.annotation.RateLimit;
+import com.mok.framework.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,6 +49,7 @@ public class FileController {
      **/
     @Operation(summary = "分页查询文件列表")
     @OperationLog(title = "分页查询文件", businessType = BusinessType.QUERY)
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:files:query")
     public R<PageResult<FileEntity>> page(@RequestBody @Valid PageParam param) {
@@ -58,6 +62,8 @@ public class FileController {
      */
     @Operation(summary = "上传文件")
     @OperationLog(title = "上传文件", businessType = BusinessType.INSERT)
+    @RateLimit(scope = RateLimitScope.USER, limit = 10, message = "文件上传过于频繁，请稍后重试")
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交文件")
     @PostMapping("/upload")
     @SaCheckPermission("system:files:upload")
     public R<FileUploadResponse> upload(
@@ -78,6 +84,8 @@ public class FileController {
 
     @Operation(summary = "上传用户头像")
     @OperationLog(title = "上传用户头像", businessType = BusinessType.INSERT)
+    @RateLimit(scope = RateLimitScope.USER, limit = 10, message = "头像上传过于频繁，请稍后重试")
+    @PreventDuplicate(lockTime = 3, message = "请勿重复上传头像")
     @PostMapping("/uploadAvatar")
     @SaCheckPermission("system:files:uploadAvatar")
     public R<FileUploadResponse> uploadAvatar(
@@ -93,6 +101,7 @@ public class FileController {
     }
 
     @Operation(summary = "获取文件详情")
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
     public R<FileEntity> getFileInfo(
             @Parameter(description = "文件ID")
@@ -108,6 +117,7 @@ public class FileController {
     }
 
     @Operation(summary = "下载文件")
+    @RateLimit(scope = RateLimitScope.USER, limit = 10)
     @GetMapping("/download/{id}")
     public void download(
             @Parameter(description = "文件ID")
@@ -119,6 +129,7 @@ public class FileController {
     }
 
     @Operation(summary = "删除文件")
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/delete/{id}")
     @SaCheckPermission("system:files:delete")
     public R<Void> delete(
@@ -136,6 +147,8 @@ public class FileController {
     }
 
     @Operation(summary = "批量删除文件")
+    @RateLimit(scope = RateLimitScope.USER, limit = 20)
+    @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @DeleteMapping("/batchDelete")
     @SaCheckPermission("system:files:delete")
     public R<String> batchDelete(@Valid @RequestBody BatchDeleteRequest request) {
@@ -151,6 +164,7 @@ public class FileController {
     }
 
     @Operation(summary = "更新下载次数")
+    @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PutMapping("/updateDownloadCount/{id}")
     public R<Void> updateDownloadCount(
             @Parameter(description = "文件ID")
