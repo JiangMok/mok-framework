@@ -242,3 +242,10 @@ file:
       - text/plain
       - application/zip
       - application/x-rar-compressed
+
+# ================================================================
+# 操作日志的保存位置
+# ================================================================
+operationlogImpl:
+  save-location:
+    type: mysql    # 可选: mysql / es

@@ -10,7 +10,7 @@ spring:
   #  激活的环境 Profile（dev-no-es / prod）
   # ------------------------------------
   profiles:
-    active: dev
+    active: dev-no-es
 
   # ------------------------------------
   #  外部配置文件导入顺序
@@ -60,7 +60,4 @@ captchaImpl:
   generate:
     type: mok-framework   # 可选: mok-framework / hutool
 
-# 操作日志存储策略：接口 com.mok.framework.operationLog.service.OperationLogService
-operationlogImpl:
-  save-location:
-    type: es    # 可选: mysql / es
+

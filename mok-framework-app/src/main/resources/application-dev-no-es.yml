@@ -244,3 +244,12 @@ file:
       - application/pdf
       - application/msword
       - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+
+
+
+# ================================================================
+# [15] # 使用 dev-no-es 配置文件时必须使用mysql保存日志
+# ================================================================
+operationlogImpl:
+  save-location:
+    type: mysql    # 可选: mysql / es
