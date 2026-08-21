@@ -76,10 +76,10 @@
         <okhttp.version>4.12.0</okhttp.version>
 
         <!-- MOK 限流 Starter -->
-        <mok-ratelimiter.version>1.0.0-SNAPSHOT</mok-ratelimiter.version>
+        <mok-ratelimiter.version>1.0.0</mok-ratelimiter.version>
 
         <!-- MOK 操作日志 Starter -->
-        <mok-operation-log.version>1.1.0-SNAPSHOT</mok-operation-log.version>
+        <mok-operation-log.version>1.1.0</mok-operation-log.version>
     </properties>
 
     <dependencyManagement>
