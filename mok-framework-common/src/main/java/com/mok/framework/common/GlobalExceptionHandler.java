@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import top.jiangmok.ratelimiter.exception.DuplicateSubmitException;
+import top.jiangmok.ratelimiter.exception.RateLimitException;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -53,6 +55,28 @@ public class GlobalExceptionHandler  {
         log.warn("业务异常，请求地址：{}，异常信息：{}",
                 request.getRequestURI(), e.getMessage());
         return R.error(e.getCode(), e.getMessage());
+    }
+
+    /**
+     * 限流 Starter 异常适配。
+     */
+    @ExceptionHandler(RateLimitException.class)
+    public R<String> handleRateLimitException(RateLimitException e,
+                                              HttpServletRequest request) {
+        log.warn("请求被限流，请求地址：{}，异常信息：{}",
+                request.getRequestURI(), e.getMessage());
+        return R.error(ResponseCode.RATE_LIMIT_ERROR, e.getMessage());
+    }
+
+    /**
+     * 防重复提交 Starter 异常适配。
+     */
+    @ExceptionHandler(DuplicateSubmitException.class)
+    public R<String> handleDuplicateSubmitException(DuplicateSubmitException e,
+                                                    HttpServletRequest request) {
+        log.warn("检测到重复提交，请求地址：{}，异常信息：{}",
+                request.getRequestURI(), e.getMessage());
+        return R.error(ResponseCode.DUPLICATE_SUBMIT_ERROR, e.getMessage());
     }
 
     @ExceptionHandler(NotLoginException.class)

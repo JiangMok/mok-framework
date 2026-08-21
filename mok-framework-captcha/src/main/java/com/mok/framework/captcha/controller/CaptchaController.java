@@ -2,11 +2,11 @@ package com.mok.framework.captcha.controller;
 
 import com.mok.framework.captcha.service.CaptchaService;
 import com.mok.framework.common.R;
-import com.mok.framework.common.annotation.OperationLog;
-import com.mok.framework.common.enums.BusinessType;
-import com.mok.framework.ratelimiter.annotation.PreventDuplicate;
-import com.mok.framework.ratelimiter.annotation.RateLimit;
-import com.mok.framework.ratelimiter.enums.RateLimitScope;
+import top.jiangmok.operationlog.annotation.OperationLog;
+import top.jiangmok.operationlog.enums.BusinessType;
+import top.jiangmok.ratelimiter.annotation.PreventDuplicate;
+import top.jiangmok.ratelimiter.annotation.RateLimit;
+import top.jiangmok.ratelimiter.enums.RateLimitScope;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;

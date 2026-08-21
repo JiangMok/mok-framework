@@ -1,3 +1,11 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  tomcat:
+    uri-encoding: UTF-8
+    max-threads: 200
+    min-spare-threads: 10
 # ================================================================
 #  [1] 开发环境 Profile 标识 & 敏感配置导入
 #  !!! 注意 : 使用此配置文件需要系修改application.yml里的操作日志保存位置未非es
@@ -202,25 +210,28 @@ mok:
     4. 仅基于日志内容本身进行分析，不做超出日志范围的推断。
     5. 回答使用Markdown格式，层级清晰。
     "
-  #限流模块
-  ratelimiter:
-    enabled: true                          # 是否启用限流模块
-    redis-key-prefix: "rate:limit:"        # Redis限流Key前缀
-    duplicate-key-prefix: "duplicate:submit:" # 防重复提交Key前缀
-    default-window: 60                     # 默认时间窗口（秒）
-    default-limit: 10                      # 默认限流次数
-    default-duplicate-lock-time: 3         # 默认防重复提交锁定时间（秒）
-    cluster-mode: false                    # 是否集群模式
-    default-rate-limit-message: "请求过于频繁，请稍后再试" # 默认限流提示信息
-    default-duplicate-message: "请勿重复提交" # 默认防重复提交提示信息
-    enable-monitor: true                   # 是否启用监控端点
-    monitor-path: "/actuator/ratelimit"    # 监控端点路径
+  # 限流 Starter
+  rate-limiter:
+    enabled: true
+    backend: redis                         # 脚手架固定使用 Redis 分布式限流
+    failure-policy: allow                  # Redis 异常时优先保证主业务可用
+    rate-key-prefix: "rate:limit:"
+    duplicate-key-prefix: "duplicate:submit:"
+    default-window: 60
+    default-limit: 10
+    default-duplicate-lock-time: 3
+    default-rate-limit-message: "请求过于频繁，请稍后再试"
+    default-duplicate-message: "请勿重复提交"
+    trust-forwarded-headers: false
+    monitor-enabled: true
   start:
     systemStartCheckMail: false
   operation-log:
-    enabled: true                 # 是否启用操作日志
-    record-get: true              # 是否记录GET请求
-    max-content-length: 2000      # 日志内容最大长度
+    enabled: true
+    save-location: mysql           # 使用独立 operationLog 数据源
+    async-strategy: rabbitmq
+    record-get: true
+    max-content-length: 2000
   #  mok-framework 验证码配置
   captcha:
     width: 120

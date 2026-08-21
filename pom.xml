@@ -35,7 +35,6 @@
         <module>mok-framework-excel</module>
         <module>mok-framework-ai</module>
         <module>mok-framework-mail</module>
-        <module>mok-framework-ratelimiter</module>
     </modules>
 
     <properties>
@@ -58,9 +57,6 @@
         <!-- swagger -->
         <swagger.version>2.2.29</swagger.version>
 
-        <!-- springdoc -->
-        <springdoc.version>2.8.6</springdoc.version>
-
         <!-- elasticsearch -->
         <elasticsearch.version>3.5.9</elasticsearch.version>
 
@@ -78,6 +74,12 @@
 
         <!-- okhttp -->
         <okhttp.version>4.12.0</okhttp.version>
+
+        <!-- MOK 限流 Starter -->
+        <mok-ratelimiter.version>1.0.0-SNAPSHOT</mok-ratelimiter.version>
+
+        <!-- MOK 操作日志 Starter -->
+        <mok-operation-log.version>1.1.0-SNAPSHOT</mok-operation-log.version>
     </properties>
 
     <dependencyManagement>
@@ -179,6 +181,18 @@
                 <version>1.0.0</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>top.jiangmok</groupId>
+                <artifactId>mok-ratelimiter-spring-boot-starter</artifactId>
+                <version>${mok-ratelimiter.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>top.jiangmok</groupId>
+                <artifactId>mok-operation-log-spring-boot-starter</artifactId>
+                <version>${mok-operation-log.version}</version>
             </dependency>
 
         </dependencies>

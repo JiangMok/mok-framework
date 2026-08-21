@@ -4,10 +4,10 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.mok.framework.ai.mapper.AiUserMapper;
 import com.mok.framework.ai.mapper.SysAiSystemPromptConfigMapper;
 import com.mok.framework.ai.service.SysAiSystemPromptConfigService;
 import com.mok.framework.common.BusinessException;
-import com.mok.framework.common.mapper.OperationLogUserMapper;
 import com.mok.framework.model.dto.AiSystemPromptConfigDTO;
 import com.mok.framework.model.entity.SysAiSystemPromptConfig;
 import com.mok.framework.model.entity.UserEntity;
@@ -29,10 +29,10 @@ import java.util.stream.Collectors;
 public class SysAiSystemPromptConfigServiceImpl implements SysAiSystemPromptConfigService {
 
     private final SysAiSystemPromptConfigMapper mapper;
-    private final OperationLogUserMapper userMapper;
+    private final AiUserMapper userMapper;
 
     public SysAiSystemPromptConfigServiceImpl(SysAiSystemPromptConfigMapper mapper,
-                                               OperationLogUserMapper userMapper) {
+                                               AiUserMapper userMapper) {
         this.mapper = mapper;
         this.userMapper = userMapper;
     }

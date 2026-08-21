@@ -45,6 +45,12 @@ public interface ResponseCode {
     
     Integer CAPTCHA_ERROR = 1002;
     String CAPTCHA_ERROR_MSG = "验证码错误";
+
+    Integer RATE_LIMIT_ERROR = 1003;
+    String RATE_LIMIT_ERROR_MSG = "请求过于频繁";
+
+    Integer DUPLICATE_SUBMIT_ERROR = 1004;
+    String DUPLICATE_SUBMIT_ERROR_MSG = "请勿重复提交";
     
     Integer USER_NOT_FOUND = 2001;
     String USER_NOT_FOUND_MSG = "用户不存在";

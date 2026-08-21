@@ -60,12 +60,6 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
 
-        <!-- 只需要RabbitMQ相关依赖 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
-
         <!-- Hutool工具类 -->
         <dependency>
             <groupId>cn.hutool</groupId>
@@ -89,10 +83,16 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- 动态数据源 -->
+        <!-- MOK 限流 Starter（全局异常适配） -->
         <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
+            <groupId>top.jiangmok</groupId>
+            <artifactId>mok-ratelimiter-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- MOK 操作日志 Starter（注解与自动配置） -->
+        <dependency>
+            <groupId>top.jiangmok</groupId>
+            <artifactId>mok-operation-log-spring-boot-starter</artifactId>
         </dependency>
 
 

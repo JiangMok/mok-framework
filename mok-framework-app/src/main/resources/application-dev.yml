@@ -227,27 +227,30 @@ mok:
     api-key: ${mok.ai.api-key}                     # AI 服务 API 密钥
     model: deepseek-v4-flash                       # 使用的模型名称
     system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"  # AI 系统提示词
-  #  mok-framework 限流配置
-  ratelimiter:
-    enabled: true                          # 是否启用限流模块
-    redis-key-prefix: "rate:limit:"        # Redis限流Key前缀
-    duplicate-key-prefix: "duplicate:submit:" # 防重复提交Key前缀
-    default-window: 60                     # 默认时间窗口（秒）
-    default-limit: 10                      # 默认限流次数
-    default-duplicate-lock-time: 3         # 默认防重复提交锁定时间（秒）
-    cluster-mode: false                    # 是否集群模式
-    default-rate-limit-message: "请求过于频繁，请稍后再试" # 默认限流提示信息
-    default-duplicate-message: "请勿重复提交" # 默认防重复提交提示信息
-    enable-monitor: true                   # 是否启用监控端点
-    monitor-path: "/actuator/ratelimit"    # 监控端点路径
+  #  MOK 限流 Starter 配置
+  rate-limiter:
+    enabled: true
+    backend: redis                         # 脚手架固定使用 Redis 分布式限流
+    failure-policy: allow                  # Redis 异常时优先保证主业务可用
+    rate-key-prefix: "rate:limit:"
+    duplicate-key-prefix: "duplicate:submit:"
+    default-window: 60
+    default-limit: 10
+    default-duplicate-lock-time: 3
+    default-rate-limit-message: "请求过于频繁，请稍后再试"
+    default-duplicate-message: "请勿重复提交"
+    trust-forwarded-headers: false
+    monitor-enabled: true
   #  mok-framework 系统启动相关配置
   start:
     systemStartCheckMail: false
   #  mok-framework 操作日志配置
   operation-log:
-    enabled: true                                   # 是否启用操作日志
-    record-get: true                                # 是否记录 GET 请求
-    max-content-length: 2000                        # 日志内容最大长度（字符）
+    enabled: true
+    save-location: es
+    async-strategy: rabbitmq
+    record-get: true
+    max-content-length: 2000
   #  mok-framework 验证码配置
   captcha:
     width: 120

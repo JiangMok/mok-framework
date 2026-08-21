@@ -182,22 +182,28 @@ mok:
     provider: ${PROD_AI_PROVIDER:deepseek}
     api-key: ${PROD_AI_API_KEY}     # 与 spring.ai.openai.api-key 保持一致或独立
     model: ${PROD_AI_MODEL:deepseek-v4-flash}
-  #  mok-framework 限流配置
-  ratelimiter:
+  #  MOK 限流 Starter 配置
+  rate-limiter:
     enabled: true
-    redis-key-prefix:
-    ratelimit:
+    backend: redis
+    failure-policy: allow
+    rate-key-prefix: "rate:limit:"
+    duplicate-key-prefix: "duplicate:submit:"
     default-window: 60
     default-limit: 10
-    default-lock-time: 10
-    cluster-mode: false
-    default-message: "请求过于频繁，请稍后再试"
+    default-duplicate-lock-time: 10
+    default-rate-limit-message: "请求过于频繁，请稍后再试"
+    default-duplicate-message: "请勿重复提交"
+    trust-forwarded-headers: false         # 仅在可信反向代理后部署时改为 true
+    monitor-enabled: true
   #  mok-framework 系统启动相关配置
   start:
     systemStartCheckMail: true
   #  mok-framework 操作日志配置
   operation-log:
     enabled: true
+    save-location: es
+    async-strategy: rabbitmq
     record-get: false                 # 生产环境通常不记录 GET 请求，减少日志量
     max-content-length: 500           # 限制内容长度，节省存储
   #  mok-framework 验证码配置

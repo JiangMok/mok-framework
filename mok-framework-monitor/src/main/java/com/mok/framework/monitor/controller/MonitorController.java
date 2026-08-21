@@ -1,8 +1,8 @@
 package com.mok.framework.monitor.controller;
 
 import com.mok.framework.common.R;
-import com.mok.framework.common.annotation.OperationLog;
-import com.mok.framework.common.enums.BusinessType;
+import top.jiangmok.operationlog.annotation.OperationLog;
+import top.jiangmok.operationlog.enums.BusinessType;
 import com.mok.framework.monitor.service.HealthCheckService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -18,7 +18,7 @@
     </properties>
 
     <dependencies>
-        <!-- elasticsearch -->
+        <!-- Elasticsearch 存储策略 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
@@ -30,6 +30,18 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
+        <!-- 用户名称与部门快照适配 -->
+        <dependency>
+            <groupId>com.mok.framework</groupId>
+            <artifactId>mok-framework-base</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>top.jiangmok</groupId>
+            <artifactId>mok-operation-log-spring-boot-starter</artifactId>
+        </dependency>
+
         <!-- 配置多数据源 -->
         <dependency>
             <groupId>com.baomidou</groupId>
@@ -38,9 +50,14 @@
 
         <!-- 限流模块 -->
         <dependency>
-            <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-ratelimiter</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <groupId>top.jiangmok</groupId>
+            <artifactId>mok-ratelimiter-spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

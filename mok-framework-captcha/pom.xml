@@ -43,9 +43,8 @@
 
         <!-- 限流模块 -->
         <dependency>
-            <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-ratelimiter</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <groupId>top.jiangmok</groupId>
+            <artifactId>mok-ratelimiter-spring-boot-starter</artifactId>
         </dependency>
     </dependencies>
 
