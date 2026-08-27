@@ -1,5 +1,6 @@
 package com.mok.framework.ai.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.util.IdUtil;
 import com.mok.framework.ai.service.SpringAiService;
@@ -23,6 +24,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/springAi")
+@SaCheckRole("ROLE_ADMIN")
 public class SpringAiController {
 
     private final SpringAiService springAiService;

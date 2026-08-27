@@ -2,12 +2,15 @@ package com.mok.framework.common;
 
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;
+import cn.dev33.satoken.exception.NotRoleException;
 import com.mok.framework.common.constant.ResponseCode;
 import com.mok.framework.common.utils.LogUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -41,6 +44,11 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler  {
        private static final Logger log = LogUtils.getLogger(GlobalExceptionHandler.class);
+    private final Environment environment;
+
+    public GlobalExceptionHandler(Environment environment) {
+        this.environment = environment;
+    }
 
     /**
      * @description: 业务异常
@@ -80,6 +88,7 @@ public class GlobalExceptionHandler  {
     }
 
     @ExceptionHandler(NotLoginException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public R<String> handleNotLoginException(NotLoginException e,
                                              HttpServletRequest request) {
         log.warn("token异常，请求地址：{}，异常信息：{}",
@@ -200,11 +209,21 @@ public class GlobalExceptionHandler  {
      * @return: com.mok.framework.common.R<java.lang.String>
     **/
     @ExceptionHandler(NotPermissionException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     public R<String> handleNotPermissionException(NotPermissionException e,
                                                  HttpServletRequest request) {
         log.warn("权限不足异常，请求地址：{}，异常信息：{}",
                 request.getRequestURI(), e.getMessage());
         return R.forbidden("权限不足，无法访问该资源");
+    }
+
+    @ExceptionHandler(NotRoleException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public R<String> handleNotRoleException(NotRoleException e,
+                                            HttpServletRequest request) {
+        log.warn("角色不足异常，请求地址：{}，异常信息：{}",
+                request.getRequestURI(), e.getMessage());
+        return R.forbidden("当前账号角色权限不足，无法执行该操作");
     }
 
     /**
@@ -339,9 +358,6 @@ public class GlobalExceptionHandler  {
      * @return: boolean
     **/
     private boolean isDevEnvironment() {
-        // 这里可以根据配置文件判断是否是开发环境
-        // 实际项目中可以从配置文件中读取
-        String env = System.getProperty("spring.profiles.active", "dev");
-        return "dev".equals(env) || "test".equals(env);
+        return environment.acceptsProfiles(Profiles.of("dev", "dev-no-es", "test"));
     }
 }

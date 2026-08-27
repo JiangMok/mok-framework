@@ -1,6 +1,7 @@
 package com.mok.framework.mq.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.R;
@@ -27,6 +28,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/mq-failed-message")
 @Tag(name = "MQ失败消息管理", description = "MQ死信失败消息的查询、处理与删除")
+@SaCheckRole("ROLE_ADMIN")
 public class MqFailedMessageController {
 
     private final MqFailedMessageService mqFailedMessageService;

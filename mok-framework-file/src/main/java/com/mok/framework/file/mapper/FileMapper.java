@@ -14,7 +14,8 @@ public interface FileMapper extends BaseMapper<FileEntity> {
     /**
      * 更新下载次数 >>> 注解写 sql
      */
-    @Update("UPDATE sys_file SET download_count = download_count + 1, update_time = NOW() WHERE id = #{id}")
+    @Update("UPDATE sys_file SET download_count = download_count + 1, update_time = NOW() " +
+            "WHERE id = #{id} AND status = 1 AND is_deleted = 0")
     int incrementDownloadCount(@Param("id") String id);
     
     /**

@@ -1,14 +1,20 @@
 package com.mok.framework.auth.config;
 
 import cn.dev33.satoken.context.SaHolder;
+import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotPermissionException;
+import cn.dev33.satoken.exception.NotRoleException;
 import cn.dev33.satoken.filter.SaServletFilter;
 import cn.dev33.satoken.jwt.StpLogicJwtForStateless;
+import cn.dev33.satoken.router.SaHttpMethod;
+import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mok.framework.common.BusinessException;
 import com.mok.framework.common.R;
+import com.mok.framework.common.constant.ResponseCode;
 import com.mok.framework.common.utils.LogUtils;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Bean;
@@ -52,12 +58,9 @@ public class SaTokenConfigure {
                 // 1. 指定拦截与放行路由
                 .addInclude("/**")
                 .addExclude(
-                        "/api/debug/**",          // 调试接口
                         "/auth/login",        // 登录接口
-                        "/auth/logout",       // 退出登录
-                        "/auth/refresh",      // 刷新token
+                        "/auth/refresh",      // 刷新 token
                         "/captcha/**",        // 验证码接口
-                        "/captcha/generate",        // 验证码接口
 
                         // Swagger 相关路径 - 全部放行
                         "/swagger-ui/**",     // Swagger UI
@@ -70,7 +73,7 @@ public class SaTokenConfigure {
                         "/favicon.ico",       // 网站图标
 
                         // 静态资源
-                        "/uploads/**",         // 静态资源
+                        "/uploads/**",         // 受控公开头像
                         "/static/**",         // 静态资源
                         "/resources/**",      // 资源文件
                         "/css/**",            // CSS
@@ -84,30 +87,42 @@ public class SaTokenConfigure {
 
                 // 2. 认证函数：执行主要鉴权逻辑
                 .setAuth(r -> {
-                    // 可以留空，鉴权工作可继续由 @SaCheckLogin 注解完成
-                    // 或在此处统一执行 StpUtil.checkLogin() 进行路由级鉴权
+                    SaRouter.match(SaHttpMethod.OPTIONS).free(ignore -> {}).back();
+                    StpUtil.checkLogin();
                 })
 
                 // 3. 前置函数：此处检查黑名单，优先级最高
                 .setBeforeAuth(r -> {
-                    // 2. 获取请求路径（包含ContextPath，不包含参数）
+                    // 获取请求路径（不包含参数）
                     String requestPath = SaHolder.getRequest().getRequestPath();
-                    log.info("===================================== 请求路径 : {}", requestPath);
+                    log.debug("Sa-Token 请求路径: {}", requestPath);
                     String token = StpUtil.getTokenValue();
-                    if (token != null && redisTemplate.hasKey(BLACKLIST_PREFIX + token)) {
-                        throw new BusinessException("Token 已失效，请重新登录");
+                    if (token != null && Boolean.TRUE.equals(redisTemplate.hasKey(BLACKLIST_PREFIX + token))) {
+                        throw new BusinessException(ResponseCode.TOKEN_INVALID, "Token 已失效，请重新登录");
                     }
                 })// 4. 统一异常处理（关键！）
                 .setError(e -> {
                     R<?> result;
-                    if (e instanceof BusinessException) {
-                        result = R.error(e.getMessage());
+                    int httpStatus;
+                    if (e instanceof NotLoginException) {
+                        result = R.tokenInvalid();
+                        httpStatus = ResponseCode.UNAUTHORIZED;
+                    } else if (e instanceof NotPermissionException || e instanceof NotRoleException) {
+                        result = R.forbidden("权限不足，无法访问该资源");
+                        httpStatus = ResponseCode.FORBIDDEN;
+                    } else if (e instanceof BusinessException businessException) {
+                        result = R.error(businessException.getCode(), businessException.getMessage());
+                        httpStatus = ResponseCode.TOKEN_INVALID.equals(businessException.getCode())
+                                ? ResponseCode.UNAUTHORIZED
+                                : ResponseCode.BAD_REQUEST;
                     } else {
                         result = R.error("系统错误");
+                        httpStatus = ResponseCode.INTERNAL_SERVER_ERROR;
                     }
-                    log.info("===================================== 系统拦截 : {}", result);
+                    log.warn("Sa-Token 拒绝请求: code={}, message={}", result.getCode(), result.getMsg());
                     try {
                         String json = objectMapper.writeValueAsString(result);
+                        SaHolder.getResponse().setStatus(httpStatus);
                         SaHolder.getResponse().setHeader("Content-Type", "application/json;charset=utf-8");
                         return json;
                     } catch (JsonProcessingException ex) {

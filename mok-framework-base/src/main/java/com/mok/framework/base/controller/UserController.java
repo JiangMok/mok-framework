@@ -1,6 +1,9 @@
 package com.mok.framework.base.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.IdUtil;
 import com.mok.framework.base.service.DepartmentService;
 import com.mok.framework.base.service.RoleService;
@@ -39,6 +42,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/user")
 @Tag(name = "用户管理", description = "用户相关接口")
+@SaCheckLogin
 public class UserController {
     private static final Logger log = LogUtils.getLogger(UserController.class);
 
@@ -69,6 +73,7 @@ public class UserController {
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:user:list")
+    @SaCheckRole("ROLE_ADMIN")
     public R<PageResult<UserEntity>> page(@RequestBody @Valid PageParam param) {
         return R.ok(userService.getPageListWithPermission(param, true));
     }
@@ -84,7 +89,6 @@ public class UserController {
     @OperationLog(title = "根据 id 查询用户信息", businessType = BusinessType.QUERY)
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
-    @SaCheckPermission("system:user:query")
     public R<Map<String, Object>> detail(@PathVariable("id") String id) {
         // 参数校验
         if (id == null || id.trim().isEmpty()) {
@@ -96,7 +100,7 @@ public class UserController {
                     userService.getById().getUsername(), id);
             return R.forbidden("无权查看该用户信息");
         }
-        UserEntity userEntity = userService.getById();
+        UserEntity userEntity = userService.getById(id);
         if (userEntity == null) {
             return R.error(404, "用户不存在");
         }
@@ -128,6 +132,7 @@ public class UserController {
     @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/add")
     @SaCheckPermission("system:user:add")
+    @SaCheckRole("ROLE_ADMIN")
     public R<String> create(@RequestBody @Valid UserDTO userDTO) {
         Long count = userService.lambdaQuery()
                 .eq(UserEntity::getUsername, userDTO.getUsername())
@@ -177,6 +182,7 @@ public class UserController {
     @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/update")
     @SaCheckPermission("system:user:edit")
+    @SaCheckRole("ROLE_ADMIN")
     public R<String> update(@RequestBody @Valid UserUpdateDto userUpdateDto) {
         if (userUpdateDto.getId() == null) {
             return R.error(400, "用户ID不能为空");
@@ -231,6 +237,7 @@ public class UserController {
     @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/delete/{id}")
     @SaCheckPermission("system:user:delete")
+    @SaCheckRole("ROLE_ADMIN")
     public R<String> delete(@PathVariable("id") String id) {
         // 参数校验
         if (id == null || id.trim().isEmpty()) {
@@ -274,6 +281,7 @@ public class UserController {
     @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @PutMapping("updateUserStatus/{id}/{status}")
     @SaCheckPermission("system:user:edit")
+    @SaCheckRole("ROLE_ADMIN")
     public R<String> updateStatus(
             @PathVariable("id") String id,
             @PathVariable("status") Integer status) {
@@ -321,6 +329,7 @@ public class UserController {
     @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PutMapping("/resetPwd/{userId}")
     @SaCheckPermission("system:user:edit")
+    @SaCheckRole("ROLE_ADMIN")
     public R<String> resetUserPwdByUserId(@PathVariable("userId") String userId) {
         // 参数校验
         if (userId == null || userId.trim().isEmpty()) {
@@ -353,17 +362,24 @@ public class UserController {
     @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/updatePwd")
-    @SaCheckPermission("system:user:edit")
     public R<String> updateUserPwd(@RequestBody @Valid UserUpdateDto userUpdateDto) {
-        if (!userService.canEditUser(userUpdateDto.getId())) {
-            return R.error(ResponseCode.FORBIDDEN, "抱歉,您当前无权修改该用户");
+        if (StpUtil.hasRole("ROLE_GUEST")) {
+            return R.forbidden("Guest 账号为只读角色，不能修改密码");
         }
-        if (!userUpdateDto.getPassword().equals(userUpdateDto.getConfirmPassword())) {
+        String currentUserId = StpUtil.getLoginIdAsString();
+        if (!currentUserId.equals(userUpdateDto.getId())) {
+            return R.forbidden("只能修改当前登录账号的密码");
+        }
+        String password = userUpdateDto.getPassword();
+        if (password == null || !password.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,20}$")) {
+            return R.validationError("密码需包含字母和数字，长度8-20位");
+        }
+        if (!password.equals(userUpdateDto.getConfirmPassword())) {
             return R.validationError("请检查密码两次输入是否一致");
         }
         UserEntity userEntity = new UserEntity();
         userEntity.setId(userUpdateDto.getId());
-        userEntity.setPassword(passwordEncoder.encode(userUpdateDto.getPassword()));
+        userEntity.setPassword(passwordEncoder.encode(password));
         Integer result = userService.updateUserPwdById(userEntity);
         return result > 0 ? R.ok("密码更改成功") : R.error("密码更改失败");
     }

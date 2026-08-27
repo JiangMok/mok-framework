@@ -1,6 +1,7 @@
 package com.mok.framework.mail.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.R;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/mail-log")
 @Tag(name = "邮件日志管理", description = "邮件发送日志查询与删除")
+@SaCheckRole("ROLE_ADMIN")
 public class MailLogController {
 
     private final MailLogService mailLogService;

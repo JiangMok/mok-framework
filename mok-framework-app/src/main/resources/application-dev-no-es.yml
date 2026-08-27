@@ -6,6 +6,11 @@ server:
     uri-encoding: UTF-8
     max-threads: 200
     min-spare-threads: 10
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+
 # ================================================================
 #  [1] 开发环境 Profile 标识 & 敏感配置导入
 #  !!! 注意 : 使用此配置文件需要系修改application.yml里的操作日志保存位置未非es
@@ -252,6 +257,7 @@ file:
       - image/jpeg
       - image/png
       - image/gif
+      - image/webp
       - application/pdf
       - application/msword
       - application/vnd.openxmlformats-officedocument.wordprocessingml.document

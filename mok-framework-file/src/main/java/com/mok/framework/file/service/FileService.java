@@ -33,6 +33,11 @@ public interface FileService {
     FileEntity getFileInfo(String id);
 
     /**
+     * 仅按公开头像业务类型查询文件。普通上传文件不得通过公开 URL 获取。
+     */
+    FileEntity getPublicAvatar(String relativePath);
+
+    /**
      * 下载文件
      */
     void download(String fileId, HttpServletResponse response);
@@ -47,8 +52,4 @@ public interface FileService {
      */
     void batchDelete(List<String> ids);
 
-    /**
-     * 更新下载次数
-     */
-    void updateDownloadCount(String id);
 }

@@ -1,6 +1,7 @@
 package com.mok.framework.operationLog.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.R;
 import com.mok.framework.operationLog.dto.OperationLogQueryRequest;
@@ -37,6 +38,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/operation-log")
 @Tag(name = "操作日志", description = "操作日志查询与清理接口")
+@SaCheckRole("ROLE_ADMIN")
 public class OperationLogController {
 
     private final OperationLogService operationLogService;

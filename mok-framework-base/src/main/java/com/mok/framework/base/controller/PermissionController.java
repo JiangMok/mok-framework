@@ -1,6 +1,8 @@
 package com.mok.framework.base.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.mok.framework.base.service.PermissionService;
 import com.mok.framework.base.service.UserService;
@@ -33,6 +35,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/permission")
 @Tag(name = "权限管理", description = "权限相关接口")
+@SaCheckLogin
 public class PermissionController {
 
     private final PermissionService permissionService;
@@ -50,6 +53,7 @@ public class PermissionController {
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:permission:query")
+    @SaCheckRole("ROLE_ADMIN")
     public R<PageResult<PermissionEntity>> page(@RequestBody @Valid PageParam param) {
         return R.ok(permissionService.getPageList(param));
     }
@@ -66,6 +70,7 @@ public class PermissionController {
     @GetMapping("/tree")
     @OperationLog(title = "获取权限树", businessType = BusinessType.QUERY)
     @SaCheckPermission("system:permission:query")
+    @SaCheckRole("ROLE_ADMIN")
     public R<List<Map<String, Object>>> getPermissionTree() {
         List<Map<String, Object>> permissionTree = permissionService.getPermissionTree();
         return R.ok(permissionTree);
@@ -83,6 +88,7 @@ public class PermissionController {
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/menu-tree")
     @SaCheckPermission("system:permission:query")
+    @SaCheckRole("ROLE_ADMIN")
     public R<List<Map<String, Object>>> getMenuTree() {
         List<Map<String, Object>> menuTree = permissionService.getMenuTree();
         return R.ok(menuTree);
@@ -99,7 +105,6 @@ public class PermissionController {
     @OperationLog(title = "获取当前用户", businessType = BusinessType.QUERY)
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/my-menus")
-    @SaCheckPermission("system:permission:query")
     public R<List<Map<String, Object>>> getMyMenus() {
         List<Map<String, Object>> menus = permissionService.getMenuTreeByUserId(StpUtil.getLoginId().toString());
         return R.ok(menus);
@@ -116,7 +121,6 @@ public class PermissionController {
     @OperationLog(title = "获取接口权限列表", businessType = BusinessType.QUERY)
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/apis")
-    @SaCheckPermission("system:permission:query")
     public R<List<PermissionEntity>> getApiPermissions() {
         // 修改：添加参数校验和空值处理
         String userId = StpUtil.getLoginId().toString();
@@ -131,7 +135,6 @@ public class PermissionController {
     @OperationLog(title = "获取权限列表", businessType = BusinessType.QUERY)
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/getByUserId")
-    @SaCheckPermission("system:permission:query")
     public R<List<PermissionEntity>> getApiPermissionsByUserId() {
         // 修改：修复方法名歧义，获取用户权限列表而非API权限
         String userId = StpUtil.getLoginId().toString();
@@ -154,6 +157,7 @@ public class PermissionController {
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/{id}")
     @SaCheckPermission("system:permission:query")
+    @SaCheckRole("ROLE_ADMIN")
     public R<PermissionEntity> getPermissionDetail(
             @Parameter(description = "权限ID") @PathVariable("id") String id) {
         // 修改：添加参数校验
@@ -181,6 +185,7 @@ public class PermissionController {
     @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/add")
     @SaCheckPermission("system:permission:add")
+    @SaCheckRole("ROLE_ADMIN")
     public R<String> createPermission(@RequestBody @Valid PermissionDTO permissionDTO) {
         String permissionId = permissionService.createPermission(permissionDTO);
         return R.ok("创建成功", permissionId);
@@ -199,6 +204,7 @@ public class PermissionController {
     @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PutMapping("/update")
     @SaCheckPermission("system:permission:edit")
+    @SaCheckRole("ROLE_ADMIN")
     public R<String> updatePermission(@RequestBody @Valid PermissionDTO permissionDTO) {
         permissionService.updatePermission(permissionDTO);
         return R.ok("更新成功");
@@ -216,6 +222,7 @@ public class PermissionController {
     @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @DeleteMapping("/delete/{id}")
     @SaCheckPermission("system:permission:delete")
+    @SaCheckRole("ROLE_ADMIN")
     public R<String> deletePermission(
             @Parameter(description = "权限ID") @PathVariable("id") String id) {
 
@@ -235,6 +242,7 @@ public class PermissionController {
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/type/{type}")
     @SaCheckPermission("system:permission:query")
+    @SaCheckRole("ROLE_ADMIN")
     public R<List<PermissionEntity>> getPermissionsByType(
             @Parameter(description = "权限类型：1-菜单，2-按钮，3-接口") @PathVariable("type") Integer type) {
 
@@ -259,6 +267,7 @@ public class PermissionController {
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/getByRoleId/{roleId}")
     @SaCheckPermission("system:permission:query")
+    @SaCheckRole("ROLE_ADMIN")
     public R<List<PermissionEntity>> selectPermissionsByRoleId(@PathVariable("roleId") String roleId) {
         return R.ok(permissionService.selectPermissionsByRoleId(roleId));
     }

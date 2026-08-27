@@ -14,6 +14,8 @@
         SELECT *
         FROM `sys_user`
         WHERE `username` = #{username}
+          AND `status` = 1
+          AND `is_deleted` = 0
     </select>
 
 </mapper>

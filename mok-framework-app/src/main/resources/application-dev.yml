@@ -15,6 +15,10 @@ server:
     max-threads: 200
     min-spare-threads: 10
 
+app:
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+
 spring:
   config:
     import: optional:file:./env/dev-env.properties # 导入外部环境变量文件（缺失时不报错）
@@ -271,6 +275,7 @@ file:
       - image/jpeg
       - image/png
       - image/gif
+      - image/webp
       - application/pdf
       - application/msword
       - application/vnd.openxmlformats-officedocument.wordprocessingml.document

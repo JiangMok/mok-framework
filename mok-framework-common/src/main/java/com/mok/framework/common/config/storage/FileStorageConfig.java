@@ -24,10 +24,14 @@ public class FileStorageConfig {
     }
 
     public boolean isAllowedType(String contentType) {
+        if (contentType == null) {
+            return false;
+        }
         if (allowedTypes == null || allowedTypes.isEmpty()) {
             return true;
         }
-        return allowedTypes.stream().anyMatch(contentType::startsWith);
+        String normalizedType = contentType.split(";", 2)[0].trim();
+        return allowedTypes.stream().anyMatch(type -> type.equalsIgnoreCase(normalizedType));
     }
 
     // Getter 和 Setter 方法

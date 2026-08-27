@@ -285,7 +285,8 @@ public class DepartmentServiceImpl
         String ancestorPrefix = userDept.getAncestors() + "," + userDept.getId();
         List<DepartmentEntity> scoped = allDepts.stream()
                 .filter(d -> d.getId().equals(userDept.getId())
-                        || d.getAncestors().startsWith(ancestorPrefix))
+                        || d.getAncestors().equals(ancestorPrefix)
+                        || d.getAncestors().startsWith(ancestorPrefix + ","))
                 .toList();
 
         return buildScopedTree(scoped, userDept.getId());
@@ -316,7 +317,8 @@ public class DepartmentServiceImpl
                 .list()
                 .stream()
                 .filter(d -> d.getId().equals(userDept.getId())
-                        || d.getAncestors().startsWith(prefix))
+                        || d.getAncestors().equals(prefix)
+                        || d.getAncestors().startsWith(prefix + ","))
                 .map(DepartmentEntity::getId)
                 .toList();
     }

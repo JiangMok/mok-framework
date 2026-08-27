@@ -1,5 +1,6 @@
 package com.mok.framework.mail.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.R;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/mail-recipient")
 @Tag(name = "收件人管理", description = "收件人增删改查及测试发送")
+@SaCheckRole("ROLE_ADMIN")
 public class MailRecipientController {
 
     private final MailRecipientService mailRecipientService;

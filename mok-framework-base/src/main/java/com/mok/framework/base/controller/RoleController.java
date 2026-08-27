@@ -1,6 +1,7 @@
 package com.mok.framework.base.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.mok.framework.base.service.PermissionService;
 import com.mok.framework.base.service.RoleService;
 import com.mok.framework.common.PageParam;
@@ -36,6 +37,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/role")
 @Tag(name = "角色管理", description = "角色相关接口")
+@SaCheckRole("ROLE_ADMIN")
 public class RoleController {
     private static final Logger log = LogUtils.getLogger(RoleController.class);
 
@@ -127,8 +129,6 @@ public class RoleController {
     @PostMapping("/add")
     @SaCheckPermission("system:role:add")
     public R<String> createRole(@RequestBody @Valid RoleDTO roleDTO) {
-        //todo 暂时设置为由"超级管理员"角色创建
-        roleDTO.setCreateBy("1");
         String roleId = roleService.createRole(roleDTO);
         return R.ok("创建成功", roleId);
     }

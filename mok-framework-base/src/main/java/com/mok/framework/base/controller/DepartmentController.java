@@ -1,6 +1,7 @@
 package com.mok.framework.base.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.mok.framework.base.service.DepartmentService;
 import com.mok.framework.common.PageParam;
@@ -31,6 +32,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/dept")
 @Tag(name = "部门管理", description = "部门相关接口")
+@SaCheckRole("ROLE_ADMIN")
 public class DepartmentController {
 
     private static final Logger log = LogUtils.getLogger(DepartmentController.class);

@@ -38,6 +38,9 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -48,6 +51,23 @@ import java.util.UUID;
 public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> implements FileService {
     private static final Logger log = LogUtils.getLogger(FileServiceImpl.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+    private static final Set<String> AVATAR_MIME_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/gif", "image/webp");
+    private static final Map<String, Set<String>> MIME_EXTENSIONS = Map.ofEntries(
+            Map.entry("image/jpeg", Set.of("jpg", "jpeg")),
+            Map.entry("image/png", Set.of("png")),
+            Map.entry("image/gif", Set.of("gif")),
+            Map.entry("image/webp", Set.of("webp")),
+            Map.entry("application/pdf", Set.of("pdf")),
+            Map.entry("application/msword", Set.of("doc")),
+            Map.entry("application/vnd.openxmlformats-officedocument.wordprocessingml.document", Set.of("docx")),
+            Map.entry("application/vnd.ms-excel", Set.of("xls")),
+            Map.entry("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Set.of("xlsx")),
+            Map.entry("application/vnd.ms-powerpoint", Set.of("ppt")),
+            Map.entry("application/vnd.openxmlformats-officedocument.presentationml.presentation", Set.of("pptx")),
+            Map.entry("text/plain", Set.of("txt")),
+            Map.entry("application/zip", Set.of("zip")),
+            Map.entry("application/x-rar-compressed", Set.of("rar")));
     private final FileStorageConfig fileStorageConfig;
     private final HttpServletRequest request;
 
@@ -97,12 +117,12 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
     public FileUploadResponse upload(MultipartFile file, Integer businessType) {
         try {
             // 1. 验证文件
-            validateFile(file);
+            validateFile(file, businessType);
 
             // 2. 生成文件信息
             String originalName = file.getOriginalFilename();
-            String extension = FilenameUtils.getExtension(originalName);
-            String mimeType = file.getContentType();
+            String extension = FilenameUtils.getExtension(originalName).toLowerCase(Locale.ROOT);
+            String mimeType = normalizeMimeType(file.getContentType());
             long fileSize = file.getSize();
 
             // 3. 生成存储路径
@@ -111,7 +131,11 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
             String relativePath = datePath + "/" + storageName;
 
             // 4. 保存到本地
-            Path fullPath = Paths.get(fileStorageConfig.getBasePath(), relativePath);
+            Path basePath = Paths.get(fileStorageConfig.getBasePath()).toAbsolutePath().normalize();
+            Path fullPath = basePath.resolve(relativePath).normalize();
+            if (!fullPath.startsWith(basePath)) {
+                throw new FileUploadException("文件存储路径无效");
+            }
             Files.createDirectories(fullPath.getParent());
             file.transferTo(fullPath.toFile());
 
@@ -160,15 +184,39 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
     }
 
     @Override
+    public FileEntity getPublicAvatar(String relativePath) {
+        LambdaQueryWrapper<FileEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(FileEntity::getFilePath, relativePath)
+                .eq(FileEntity::getBusinessType, 1)
+                .eq(FileEntity::getStatus, 1)
+                .eq(FileEntity::getIsDeleted, 0);
+        FileEntity fileEntity = getOne(queryWrapper, false);
+        if (fileEntity == null) {
+            return null;
+        }
+
+        String mimeType = normalizeMimeType(fileEntity.getMimeType());
+        if (!StringUtils.hasText(fileEntity.getStorageName())) {
+            return null;
+        }
+        String extension = FilenameUtils.getExtension(fileEntity.getStorageName()).toLowerCase(Locale.ROOT);
+        if (!AVATAR_MIME_TYPES.contains(mimeType)
+                || !MIME_EXTENSIONS.getOrDefault(mimeType, Set.of()).contains(extension)) {
+            return null;
+        }
+        return fileEntity;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void download(String id, HttpServletResponse response) {
         try {
             FileEntity fileEntity = getFileEntity(id);
 
-            Path filePath = Paths.get(fileStorageConfig.getBasePath(), fileEntity.getFilePath());
+            Path filePath = resolveStoredPath(fileEntity);
             File file = filePath.toFile();
 
-            if (!file.exists()) {
+            if (!file.isFile()) {
                 response.setStatus(404);
                 return;
             }
@@ -178,6 +226,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
             response.setContentType(fileEntity.getMimeType());
             response.setHeader("Content-Disposition",
                     "attachment; filename=\"" + encodedFileName + "\"");
+            response.setHeader("X-Content-Type-Options", "nosniff");
             response.setContentLengthLong(fileEntity.getFileSize());
 
             // 写入响应流
@@ -187,7 +236,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
             }
 
             // 更新下载次数
-            updateDownloadCount(id);
+            baseMapper.incrementDownloadCount(id);
 
         } catch (IOException e) {
             log.error("文件下载失败", e);
@@ -225,22 +274,35 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
         baseMapper.batchDelete(ids, currentUserId);
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void updateDownloadCount(String id) {
-        baseMapper.incrementDownloadCount(id);
-    }
-
-    private void validateFile(MultipartFile file) {
+    private void validateFile(MultipartFile file, Integer businessType) {
         if (file.isEmpty()) {
             throw new FileUploadException("文件不能为空");
         }
 
-        if (!fileStorageConfig.isAllowedType(file.getContentType())) {
+        String originalName = file.getOriginalFilename();
+        String mimeType = normalizeMimeType(file.getContentType());
+        String extension = StringUtils.hasText(originalName)
+                ? FilenameUtils.getExtension(originalName).toLowerCase(Locale.ROOT)
+                : "";
+
+        if (!StringUtils.hasText(originalName)
+                || !fileStorageConfig.isAllowedType(mimeType)
+                || !MIME_EXTENSIONS.getOrDefault(mimeType, Set.of()).contains(extension)) {
             throw new FileUploadException("不支持的文件类型");
         }
 
+        if (Integer.valueOf(1).equals(businessType) && !AVATAR_MIME_TYPES.contains(mimeType)) {
+            throw new FileUploadException("头像仅支持 JPG、PNG、GIF 或 WebP 图片");
+        }
+
         // 文件大小限制在配置中通过Spring的multipart配置控制
+    }
+
+    private String normalizeMimeType(String contentType) {
+        if (contentType == null) {
+            return "";
+        }
+        return contentType.split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
     }
 
     private String getFileType(String mimeType) {
@@ -280,6 +342,19 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
         // fileInfo.setUploadUserName(userService.getUsernameById(fileEntity.getUploadUserId()));
 
         return fileInfo;
+    }
+
+    private Path resolveStoredPath(FileEntity fileEntity) {
+        if (!StringUtils.hasText(fileEntity.getFilePath())) {
+            throw new FileNotFoundException(fileEntity.getId());
+        }
+        Path basePath = Paths.get(fileStorageConfig.getBasePath()).toAbsolutePath().normalize();
+        Path filePath = basePath.resolve(fileEntity.getFilePath()).normalize();
+        if (!filePath.startsWith(basePath)) {
+            log.warn("拒绝访问越界文件路径: fileId={}", fileEntity.getId());
+            throw new FileNotFoundException(fileEntity.getId());
+        }
+        return filePath;
     }
 
     private String getClientIp() {

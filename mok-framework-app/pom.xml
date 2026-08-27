@@ -44,12 +44,6 @@
 
         <dependency>
             <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-test</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.mok.framework</groupId>
             <artifactId>mok-framework-operationLog</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
@@ -92,12 +86,6 @@
 
         <dependency>
             <groupId>com.mok.framework</groupId>
-            <artifactId>mok-framework-excel</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.mok.framework</groupId>
             <artifactId>mok-framework-ai</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
@@ -107,5 +95,19 @@
             <artifactId>mok-ratelimiter-spring-boot-starter</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

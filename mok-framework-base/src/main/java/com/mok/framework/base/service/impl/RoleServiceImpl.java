@@ -268,6 +268,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
         RoleEntity roleEntity = new RoleEntity();
         BeanUtils.copyProperties(roleDTO, roleEntity);
         roleEntity.setId(IdUtil.simpleUUID());
+        roleEntity.setCreateBy(currentUserEntity.getId());
         //保存角色
         save(roleEntity);
         if (roleDTO.getPermissionIds() != null && !roleDTO.getPermissionIds().isEmpty()) {
@@ -282,6 +283,9 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
         RoleEntity roleEntity = getById(roleDTO.getId());
         if (roleEntity == null) {
             throw new BusinessException("角色不存在");
+        }
+        if ("ROLE_ADMIN".equals(roleEntity.getRoleCode())) {
+            throw new BusinessException("不能修改超级管理员角色");
         }
 
         // 检查角色编码是否重复（排除自己）

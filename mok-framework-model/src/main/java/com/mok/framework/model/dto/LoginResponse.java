@@ -1,5 +1,6 @@
 package com.mok.framework.model.dto;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -43,12 +44,23 @@ public class LoginResponse  {
 
     private String avatar;
 
+    /** 当前用户角色编码，仅用于向客户端描述登录态。 */
+    private List<String> roles = List.of();
+
     public String getAvatar() {
         return avatar;
     }
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles == null ? List.of() : List.copyOf(roles);
     }
 
     // 默认构造函数
@@ -146,13 +158,14 @@ public class LoginResponse  {
                 Objects.equals(tokenType, that.tokenType) &&
                 Objects.equals(username, that.username) &&
                 Objects.equals(nickname, that.nickname) &&
-                Objects.equals(userId, that.userId);
+                Objects.equals(userId, that.userId) &&
+                Objects.equals(roles, that.roles);
     }
 
     // hashCode 方法
     @Override
     public int hashCode() {
-        return Objects.hash(token, refreshToken, expiresIn, tokenType, username, nickname, userId);
+        return Objects.hash(token, refreshToken, expiresIn, tokenType, username, nickname, userId, roles);
     }
 
     // toString 方法
@@ -166,6 +179,7 @@ public class LoginResponse  {
                 ", username='" + username + '\'' +
                 ", nickname='" + nickname + '\'' +
                 ", userId='" + userId + '\'' +
+                ", roles=" + roles +
                 '}';
     }
 }

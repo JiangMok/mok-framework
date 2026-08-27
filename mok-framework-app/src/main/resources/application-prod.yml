@@ -154,6 +154,18 @@ springdoc:
   swagger-ui:
     enabled: false                   # 关闭 Swagger UI
 
+# 生产环境默认关闭所有 Actuator Web 端点。
+management:
+  endpoints:
+    web:
+      exposure:
+        exclude: "*"
+
+# 同源部署不需要 CORS；跨域部署时由环境显式提供逗号分隔白名单。
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
 # ================================================================
 #  日志策略 — 生产环境减少日志量
 # ================================================================
@@ -239,7 +251,6 @@ file:
       - image/png
       - image/gif
       - image/webp
-      - image/svg+xml
       - application/pdf
       - application/msword
       - application/vnd.openxmlformats-officedocument.wordprocessingml.document

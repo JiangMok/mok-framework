@@ -104,7 +104,7 @@ public class HealthCheckServiceImpl implements HealthCheckService {
 
         // 计算总体状态：有 DOWN → DOWN，有 WARNING 但无 DOWN → WARNING，否则 UP
         HealthCheckResult[] results = {
-                redisResult, memoryResult, rabbitmqResult,
+                dbResult, redisResult, memoryResult, rabbitmqResult,
                 cpuResult, threadsResult, gcResult, diskResult, poolResult
         };
         boolean hasDown = false;

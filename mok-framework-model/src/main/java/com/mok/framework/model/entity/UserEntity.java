@@ -1,6 +1,7 @@
 package com.mok.framework.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -104,6 +105,7 @@ public class UserEntity implements Serializable  {
         return this;
     }
 
+    @JsonIgnore
     public String getPassword() {
         return password;
     }
@@ -244,7 +246,7 @@ public class UserEntity implements Serializable  {
         return "UserEntity{" +
                 "id='" + id + '\'' +
                 ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
+                ", password='[PROTECTED]'" +
                 ", nickname='" + nickname + '\'' +
                 ", phone='" + phone + '\'' +
                 ", email='" + email + '\'' +

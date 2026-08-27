@@ -1,5 +1,6 @@
 package com.mok.framework.ai.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mok.framework.ai.service.SysAiSystemPromptConfigService;
 import com.mok.framework.common.R;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/ai-system-prompt-config")
 @Tag(name = "AI系统提示词配置", description = "AI系统提示词配置管理")
+@SaCheckRole("ROLE_ADMIN")
 public class SysAiSystemPromptConfigController {
 
     private final SysAiSystemPromptConfigService service;

@@ -1,5 +1,6 @@
 package com.mok.framework.mail.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.mok.framework.common.R;
 import top.jiangmok.operationlog.annotation.OperationLog;
 import top.jiangmok.operationlog.enums.BusinessType;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/mail-sender")
 @Tag(name = "发件箱配置", description = "系统邮箱配置管理")
+@SaCheckRole("ROLE_ADMIN")
 public class MailSenderController {
 
     private final MailSenderService mailSenderService;

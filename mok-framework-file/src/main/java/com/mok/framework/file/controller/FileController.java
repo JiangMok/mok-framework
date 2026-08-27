@@ -2,6 +2,7 @@ package com.mok.framework.file.controller;
 
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.R;
@@ -30,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "文件管理", description = "文件上传下载接口")
 @RestController
 @RequestMapping("/files")
+@SaCheckRole("ROLE_ADMIN")
 public class FileController {
     private static final Logger log = LogUtils.getLogger(FileController.class);
 
@@ -162,23 +164,5 @@ public class FileController {
             return R.error("批量删除失败");
         }
     }
-
-    @Operation(summary = "更新下载次数")
-    @RateLimit(scope = RateLimitScope.USER, limit = 60)
-    @PutMapping("/updateDownloadCount/{id}")
-    public R<Void> updateDownloadCount(
-            @Parameter(description = "文件ID")
-            @PathVariable("id") String id) {
-
-        log.info("更新下载次数: id={}", id);
-        try {
-            fileService.updateDownloadCount(id);
-            return R.ok();
-        } catch (Exception e) {
-            log.error("更新下载次数失败: {}", id, e);
-            return R.error("更新失败");
-        }
-    }
-
 
 }

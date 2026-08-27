@@ -49,6 +49,7 @@ system:
     - oldPassword
     - newPassword
     - token
+    - refreshToken
     - secret
     - apiKey
 

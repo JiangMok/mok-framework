@@ -40,7 +40,7 @@ public class MailSenderServiceImpl implements MailSenderService {
         if (list.isEmpty()) {
             throw new BusinessException("发件箱尚未配置，请先在系统中配置系统邮箱");
         }
-        return list.get(0);
+        return list.get(0).setPassword("");
     }
 
     @Override

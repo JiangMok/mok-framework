@@ -1,5 +1,6 @@
 package com.mok.framework.ai.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.mok.framework.ai.service.AIService;
 import com.mok.framework.ai.service.SysAiSystemPromptConfigService;
 import com.mok.framework.model.dto.AiAnalysisRequest;
@@ -22,6 +23,7 @@ import java.util.concurrent.Executor;
 
 @RestController // 标识为 REST 控制器
 @RequestMapping("/ai") // 设置基础请求路径 /ai
+@SaCheckRole("ROLE_ADMIN")
 public class AiAnalysisController {
 
     private final AIService aiService; // 注入 AI 服务，用于实际的流式分析
