@@ -71,6 +71,26 @@ public interface UserService extends IService<UserEntity> {
     Integer updateUserPwdById(UserEntity userEntity);
 
     /**
+     * 在同一事务中创建用户并分配角色。
+     */
+    boolean createUserWithRoles(UserEntity userEntity, List<String> roleIds);
+
+    /**
+     * 在同一事务中更新用户及其角色。
+     */
+    boolean updateUserWithRoles(UserEntity userEntity, List<String> roleIds);
+
+    /**
+     * 在同一事务中删除用户及其角色关系。
+     */
+    boolean deleteUserWithRoles(UserEntity userEntity);
+
+    /**
+     * 修改用户状态并同步失效安全状态。
+     */
+    boolean updateUserStatus(UserEntity userEntity);
+
+    /**
      * 通过ID 获取User
      *
      * @param id

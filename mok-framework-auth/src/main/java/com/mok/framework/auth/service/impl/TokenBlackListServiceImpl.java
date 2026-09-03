@@ -20,6 +20,7 @@ public class TokenBlackListServiceImpl implements TokenBlackListService {
     /**
      * 将Token加入黑名单,TTL 自动设为 Token 剩余有效期
      */
+    @Override
     public void addToBlacklist(String token,long ttl) {
         String key = BLACKLIST_PREFIX + token;
 
@@ -34,5 +35,11 @@ public class TokenBlackListServiceImpl implements TokenBlackListService {
             // 或者你也可以选择设置一个默认较短过期时间，例如 1 小时
             redisTemplate.opsForValue().set(key, token, 3600, TimeUnit.SECONDS);
         }
+    }
+
+    @Override
+    public boolean isBlacklisted(String token) {
+        return token != null && !token.isBlank()
+                && Boolean.TRUE.equals(redisTemplate.hasKey(BLACKLIST_PREFIX + token));
     }
 }

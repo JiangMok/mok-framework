@@ -1,6 +1,5 @@
 package com.mok.framework.mail.service.impl;
 
-import cn.hutool.core.util.IdUtil;
 import cn.hutool.extra.mail.MailAccount;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.mok.framework.common.BusinessException;
@@ -12,11 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 发件箱配置 Service 实现
- * 使用 AtomicReference<MailAccount> 实现热刷新，无需重启
+ * 每次发送前读取唯一配置，确保禁用或改密在多实例环境中立即生效。
  *
  * @author mok
  * @date 2026/7/17
@@ -24,10 +22,10 @@ import java.util.concurrent.atomic.AtomicReference;
 @Service
 public class MailSenderServiceImpl implements MailSenderService {
 
-    private final MailSenderMapper mailSenderMapper;
+    private static final String SYSTEM_MAIL_SENDER_ID = "system-mail-sender";
+    private static final long SMTP_TIMEOUT_MILLIS = 60_000L;
 
-    /** 持有当前 MailAccount，更新配置后原子替换，实现热刷新 */
-    private final AtomicReference<MailAccount> mailAccountRef = new AtomicReference<>();
+    private final MailSenderMapper mailSenderMapper;
 
     public MailSenderServiceImpl(MailSenderMapper mailSenderMapper) {
         this.mailSenderMapper = mailSenderMapper;
@@ -35,34 +33,33 @@ public class MailSenderServiceImpl implements MailSenderService {
 
     @Override
     public MailSender getConfig() {
-        List<MailSender> list = mailSenderMapper.selectList(new LambdaQueryWrapper<MailSender>()
-                .eq(MailSender::getStatus, 1));
-        if (list.isEmpty()) {
-            throw new BusinessException("发件箱尚未配置，请先在系统中配置系统邮箱");
-        }
-        return list.get(0).setPassword("");
+        return copyWithoutPassword(requireUniqueConfig());
     }
 
     @Override
     @Transactional
     public void updateConfig(MailSenderDTO dto) {
-        // 先查现有配置
-        List<MailSender> existing = mailSenderMapper.selectList(new LambdaQueryWrapper<MailSender>()
-                .eq(MailSender::getStatus, 1));
+        List<MailSender> existing = loadAllConfigs();
+        ensureUnique(existing);
 
         MailSender sender;
         if (existing.isEmpty()) {
-            // 首次配置，新增
+            if (dto.getPassword() == null || dto.getPassword().isBlank()) {
+                throw new BusinessException("首次配置发件箱时必须填写认证密码");
+            }
             sender = new MailSender();
-            sender.setId(IdUtil.simpleUUID());
+            // 固定主键使并发首次配置在数据库层发生唯一键冲突，而不是创建两条记录。
+            sender.setId(SYSTEM_MAIL_SENDER_ID);
         } else {
-            // 更新已存在的配置
             sender = existing.get(0);
         }
 
         // 仅更新密码（如果传了新密码），否则保持原密码
         if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
             sender.setPassword(dto.getPassword());
+        }
+        if (sender.getPassword() == null || sender.getPassword().isBlank()) {
+            throw new BusinessException("发件箱认证密码不能为空");
         }
 
         sender.setHost(dto.getHost());
@@ -72,46 +69,59 @@ public class MailSenderServiceImpl implements MailSenderService {
         sender.setUsername(dto.getUsername());
         sender.setStatus(dto.getStatus());
 
-        // 保存
+        int affectedRows;
         if (existing.isEmpty()) {
-            mailSenderMapper.insert(sender);
+            affectedRows = mailSenderMapper.insert(sender);
         } else {
-            mailSenderMapper.updateById(sender);
+            affectedRows = mailSenderMapper.updateById(sender);
+        }
+        if (affectedRows != 1) {
+            throw new BusinessException("发件箱配置保存失败，请重试");
         }
 
-        // 热刷新 MailAccount
-        refreshMailAccount(sender);
     }
 
     @Override
     public MailAccount getMailAccount() {
-        MailAccount account = mailAccountRef.get();
-        if (account == null) {
-            synchronized (this) {
-                account = mailAccountRef.get();
-                if (account == null) {
-                    // 延迟加载：从 DB 初始化
-                    List<MailSender> list = mailSenderMapper.selectList(new LambdaQueryWrapper<MailSender>()
-                            .eq(MailSender::getStatus, 1));
-                    if (!list.isEmpty()) {
-                        account = buildMailAccount(list.get(0));
-                        mailAccountRef.set(account);
-                    }
-                }
-            }
+        MailSender sender = requireUniqueConfig();
+        if (!Integer.valueOf(1).equals(sender.getStatus())) {
+            throw new BusinessException("发件箱配置已禁用");
         }
-        if (account == null) {
-            throw new BusinessException("发件箱尚未配置，请先在系统中配置系统邮箱");
-        }
-        return account;
+        return buildMailAccount(sender);
     }
 
-    /**
-     * 热刷新：根据 DB 记录重建 MailAccount 并原子替换
-     */
-    private void refreshMailAccount(MailSender sender) {
-        MailAccount newAccount = buildMailAccount(sender);
-        mailAccountRef.set(newAccount);
+    private List<MailSender> loadAllConfigs() {
+        return mailSenderMapper.selectList(new LambdaQueryWrapper<MailSender>()
+                .orderByAsc(MailSender::getCreateTime));
+    }
+
+    private MailSender requireUniqueConfig() {
+        List<MailSender> configs = loadAllConfigs();
+        ensureUnique(configs);
+        if (configs.isEmpty()) {
+            throw new BusinessException("发件箱尚未配置，请先在系统中配置系统邮箱");
+        }
+        return configs.get(0);
+    }
+
+    private void ensureUnique(List<MailSender> configs) {
+        if (configs.size() > 1) {
+            throw new BusinessException("检测到多条发件箱配置，请先清理重复数据");
+        }
+    }
+
+    private MailSender copyWithoutPassword(MailSender source) {
+        return MailSender.builder()
+                .id(source.getId())
+                .host(source.getHost())
+                .port(source.getPort())
+                .sslEnable(source.getSslEnable())
+                .fromAddress(source.getFromAddress())
+                .username(source.getUsername())
+                .status(source.getStatus())
+                .createTime(source.getCreateTime())
+                .updateTime(source.getUpdateTime())
+                .build();
     }
 
     /**
@@ -121,11 +131,15 @@ public class MailSenderServiceImpl implements MailSenderService {
         MailAccount account = new MailAccount();
         account.setHost(sender.getHost());
         account.setPort(sender.getPort());
-        account.setSslEnable(sender.getSslEnable() == 1);
+        account.setSslEnable(Integer.valueOf(1).equals(sender.getSslEnable()));
         account.setFrom(sender.getFromAddress());
         account.setUser(sender.getUsername());
         account.setPass(sender.getPassword());
         account.setAuth(true);
+        // 单阶段网络操作最多等待 60 秒，必须短于投递占位租约。
+        account.setConnectionTimeout(SMTP_TIMEOUT_MILLIS);
+        account.setTimeout(SMTP_TIMEOUT_MILLIS);
+        account.setWriteTimeout(SMTP_TIMEOUT_MILLIS);
         return account;
     }
 }

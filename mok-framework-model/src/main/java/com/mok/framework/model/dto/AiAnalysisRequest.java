@@ -3,6 +3,7 @@ package com.mok.framework.model.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mok.framework.model.enums.AiAnalysisRequestType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.Objects;
 
 /**
@@ -12,10 +13,12 @@ import java.util.Objects;
  */
 public class AiAnalysisRequest {
 
+    @NotBlank(message = "待分析记录ID不能为空")
     private String id;
 
     //类型 使用枚举类
     @JsonProperty("type")
+    @NotNull(message = "AI分析类型不能为空")
     private AiAnalysisRequestType aiAnalysisRequestType;
 
     public AiAnalysisRequest(String id, AiAnalysisRequestType aiAnalysisRequestType) {

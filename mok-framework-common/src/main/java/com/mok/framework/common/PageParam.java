@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +36,7 @@ public class PageParam implements Serializable  {
     @Schema(description = "每页大小", example = "10", required = true)
     @NotNull(message = "每页大小不能为空")
     @Min(value = 1, message = "每页大小不能小于1")
+    @Max(value = MAX_PAGE_SIZE, message = "每页大小不能超过1000")
     private Integer pageSize = DEFAULT_PAGE_SIZE;
 
     @Schema(description = "排序字段", example = "createTime")

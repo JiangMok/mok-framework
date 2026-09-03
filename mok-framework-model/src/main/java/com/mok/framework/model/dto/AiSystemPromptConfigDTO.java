@@ -1,5 +1,8 @@
 package com.mok.framework.model.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -15,8 +18,11 @@ public class AiSystemPromptConfigDTO implements Serializable {
 
     private String id;
 
+    @NotBlank(message = "AI分析类型不能为空")
+    @Pattern(regexp = "OPERATION_LOG|MQ_FAILED_MESSAGE", message = "AI分析类型不合法")
     private String aiAnalysisRequestType;
 
+    @NotBlank(message = "系统提示词不能为空")
     private String systemPrompt;
 
     private LocalDateTime createTime;

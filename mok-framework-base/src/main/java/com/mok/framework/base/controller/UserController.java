@@ -18,6 +18,8 @@ import top.jiangmok.operationlog.enums.BusinessType;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.dto.UserDTO;
 import com.mok.framework.model.dto.UserUpdateDto;
+import com.mok.framework.model.dto.PasswordChangeRequest;
+import com.mok.framework.model.dto.PasswordResetRequest;
 import com.mok.framework.model.entity.RoleEntity;
 import com.mok.framework.model.entity.UserEntity;
 import top.jiangmok.ratelimiter.annotation.PreventDuplicate;
@@ -31,7 +33,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @description:用户controller
@@ -159,10 +163,8 @@ public class UserController {
         userEntity.setDeptId(userDTO.getDeptId());
         // 设置创建者为当前用户
         userEntity.setCreateBy(currentUserEntity.getId());
-        userService.save(userEntity);
-        //添加角色信息
-        if (userDTO.getRoleIds() != null && !userDTO.getRoleIds().isEmpty()) {
-            roleService.assignUserRoles(userEntity.getId(), userDTO.getRoleIds());
+        if (!userService.createUserWithRoles(userEntity, userDTO.getRoleIds())) {
+            return R.error("创建用户失败");
         }
 
         log.info("创建用户成功:{}", userDTO.getUsername());
@@ -197,6 +199,20 @@ public class UserController {
         if (userEntity == null) {
             return R.error(404, "用户不存在");
         }
+        if ("admin".equals(userEntity.getUsername())) {
+            Set<String> currentRoleIds = new HashSet<>(roleService.getRolesByUserId(userEntity.getId())
+                    .stream()
+                    .map(RoleEntity::getId)
+                    .toList());
+            Set<String> requestedRoleIds = userUpdateDto.getRoleIds() == null
+                    ? currentRoleIds
+                    : new HashSet<>(userUpdateDto.getRoleIds());
+            if (!"admin".equals(userUpdateDto.getUsername())
+                    || !Integer.valueOf(1).equals(userUpdateDto.getStatus())
+                    || !currentRoleIds.equals(requestedRoleIds)) {
+                return R.forbidden("禁止修改超级管理员的用户名、状态或角色");
+            }
+        }
         Long count = userService.lambdaQuery()
                 .eq(UserEntity::getUsername, userUpdateDto.getUsername())
                 .ne(UserEntity::getId, userUpdateDto.getId())
@@ -214,11 +230,8 @@ public class UserController {
         userEntity.setStatus(userUpdateDto.getStatus());
         userEntity.setDeptId(userUpdateDto.getDeptId());
 
-        userService.updateById(userEntity);
-
-        //更新角色
-        if (userUpdateDto.getRoleIds() != null) {
-            roleService.assignUserRoles(userUpdateDto.getId(), userUpdateDto.getRoleIds());
+        if (!userService.updateUserWithRoles(userEntity, userUpdateDto.getRoleIds())) {
+            return R.error("用户更新失败");
         }
 
         log.info("更新用户成功:{}", userUpdateDto.getUsername());
@@ -264,7 +277,9 @@ public class UserController {
         }
         //逻辑删除,1=删除,0=未删除
         userEntity.setIsDeleted(1);
-        userService.removeById(userEntity);
+        if (!userService.deleteUserWithRoles(userEntity)) {
+            return R.error("用户删除失败");
+        }
         log.info("用户删除成功:{}", userEntity.getUsername());
         return R.ok("用户删除成功");
     }
@@ -308,7 +323,9 @@ public class UserController {
         }
 
         userEntity.setStatus(status);
-        userService.updateById(userEntity);
+        if (!userService.updateUserStatus(userEntity)) {
+            return R.error("用户状态修改失败");
+        }
 
         String statusText = status == 1 ? "启用" : "禁用";
         log.info("修改用户: {} 的状态 {}", userEntity.getUsername(), statusText);
@@ -330,7 +347,9 @@ public class UserController {
     @PutMapping("/resetPwd/{userId}")
     @SaCheckPermission("system:user:edit")
     @SaCheckRole("ROLE_ADMIN")
-    public R<String> resetUserPwdByUserId(@PathVariable("userId") String userId) {
+    public R<String> resetUserPwdByUserId(
+            @PathVariable("userId") String userId,
+            @Valid @RequestBody PasswordResetRequest request) {
         // 参数校验
         if (userId == null || userId.trim().isEmpty()) {
             return R.error(400, "用户ID不能为空");
@@ -345,7 +364,7 @@ public class UserController {
         }
         UserEntity userEntity = new UserEntity();
         userEntity.setId(userId);
-        userEntity.setPassword(passwordEncoder.encode("123456"));
+        userEntity.setPassword(passwordEncoder.encode(request.getNewPassword()));
         Integer result = userService.updateUserPwdById(userEntity);
         return result > 0 ? R.ok("密码重置成功") : R.error("密码重置失败");
     }
@@ -362,24 +381,27 @@ public class UserController {
     @RateLimit(scope = RateLimitScope.USER, limit = 20)
     @PreventDuplicate(lockTime = 3, message = "请勿重复提交")
     @PostMapping("/updatePwd")
-    public R<String> updateUserPwd(@RequestBody @Valid UserUpdateDto userUpdateDto) {
+    public R<String> updateUserPwd(@RequestBody @Valid PasswordChangeRequest request) {
         if (StpUtil.hasRole("ROLE_GUEST")) {
             return R.forbidden("Guest 账号为只读角色，不能修改密码");
         }
         String currentUserId = StpUtil.getLoginIdAsString();
-        if (!currentUserId.equals(userUpdateDto.getId())) {
-            return R.forbidden("只能修改当前登录账号的密码");
+        UserEntity currentUser = userService.getById(currentUserId);
+        if (currentUser == null) {
+            return R.error(ResponseCode.USER_DISABLED, "用户不存在或已被禁用");
         }
-        String password = userUpdateDto.getPassword();
-        if (password == null || !password.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,20}$")) {
-            return R.validationError("密码需包含字母和数字，长度8-20位");
+        if (!passwordEncoder.matches(request.getOldPassword(), currentUser.getPassword())) {
+            return R.error(ResponseCode.PASSWORD_ERROR, "当前密码错误");
         }
-        if (!password.equals(userUpdateDto.getConfirmPassword())) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             return R.validationError("请检查密码两次输入是否一致");
         }
+        if (passwordEncoder.matches(request.getNewPassword(), currentUser.getPassword())) {
+            return R.validationError("新密码不能与当前密码相同");
+        }
         UserEntity userEntity = new UserEntity();
-        userEntity.setId(userUpdateDto.getId());
-        userEntity.setPassword(passwordEncoder.encode(password));
+        userEntity.setId(currentUserId);
+        userEntity.setPassword(passwordEncoder.encode(request.getNewPassword()));
         Integer result = userService.updateUserPwdById(userEntity);
         return result > 0 ? R.ok("密码更改成功") : R.error("密码更改失败");
     }

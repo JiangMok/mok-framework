@@ -14,6 +14,7 @@ import com.mok.framework.model.entity.UserEntity;
 import com.mok.framework.model.enums.AiAnalysisRequestType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -61,6 +62,8 @@ public class SysAiSystemPromptConfigServiceImpl implements SysAiSystemPromptConf
     @Override
     @Transactional
     public void create(AiSystemPromptConfigDTO dto) {
+        validateDto(dto, false);
+        ensureTypeUnique(dto.getAiAnalysisRequestType(), null);
         SysAiSystemPromptConfig entity = new SysAiSystemPromptConfig();
         entity.setId(IdUtil.simpleUUID());
         entity.setAiAnalysisRequestType(dto.getAiAnalysisRequestType());
@@ -74,10 +77,12 @@ public class SysAiSystemPromptConfigServiceImpl implements SysAiSystemPromptConf
     @Override
     @Transactional
     public void update(AiSystemPromptConfigDTO dto) {
+        validateDto(dto, true);
         SysAiSystemPromptConfig entity = mapper.selectById(dto.getId());
         if (entity == null) {
             throw new BusinessException("AI系统提示词配置不存在");
         }
+        ensureTypeUnique(dto.getAiAnalysisRequestType(), dto.getId());
         entity.setAiAnalysisRequestType(dto.getAiAnalysisRequestType());
         entity.setSystemPrompt(dto.getSystemPrompt());
         entity.setUpdateTime(LocalDateTime.now());
@@ -97,7 +102,38 @@ public class SysAiSystemPromptConfigServiceImpl implements SysAiSystemPromptConf
 
     @Override
     public SysAiSystemPromptConfig getByAiAnalysisRequestType(AiAnalysisRequestType aiAnalysisRequestType) {
+        if (aiAnalysisRequestType == null) {
+            throw new BusinessException("AI分析类型不能为空");
+        }
         return mapper.getByAiAnalysisRequestType(aiAnalysisRequestType.getCode());
+    }
+
+    private void validateDto(AiSystemPromptConfigDTO dto, boolean requireId) {
+        if (dto == null) {
+            throw new BusinessException("AI系统提示词配置不能为空");
+        }
+        if (requireId && !StringUtils.hasText(dto.getId())) {
+            throw new BusinessException("AI系统提示词配置ID不能为空");
+        }
+        if (!StringUtils.hasText(dto.getAiAnalysisRequestType())
+                || AiAnalysisRequestType.fromCode(dto.getAiAnalysisRequestType()) == null) {
+            throw new BusinessException("AI分析类型不合法");
+        }
+        if (!StringUtils.hasText(dto.getSystemPrompt())) {
+            throw new BusinessException("系统提示词不能为空");
+        }
+    }
+
+    private void ensureTypeUnique(String type, String excludeId) {
+        LambdaQueryWrapper<SysAiSystemPromptConfig> wrapper =
+                new LambdaQueryWrapper<SysAiSystemPromptConfig>()
+                        .eq(SysAiSystemPromptConfig::getAiAnalysisRequestType, type);
+        if (StringUtils.hasText(excludeId)) {
+            wrapper.ne(SysAiSystemPromptConfig::getId, excludeId);
+        }
+        if (mapper.selectCount(wrapper) > 0) {
+            throw new BusinessException("该AI分析类型已存在系统提示词配置");
+        }
     }
 
     /**

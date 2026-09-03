@@ -3,15 +3,18 @@ package com.mok.framework.mail.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.mok.framework.common.BusinessException;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
-import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.mail.mapper.MailLogMapper;
+import com.mok.framework.mail.service.MailDeliveryClaim;
 import com.mok.framework.mail.service.MailLogService;
 import com.mok.framework.model.entity.MailLog;
-import org.slf4j.Logger;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
 
 /**
  *
@@ -21,8 +24,6 @@ import org.springframework.util.StringUtils;
 @Service
 public class MailLogServiceImpl implements MailLogService {
 
-    private final Logger log = LogUtils.getLogger(MailLogServiceImpl.class);
-
     private final MailLogMapper mailLogMapper;
 
     public MailLogServiceImpl(MailLogMapper mailLogMapper){
@@ -31,7 +32,9 @@ public class MailLogServiceImpl implements MailLogService {
 
     @Override
     public void saveMailLog(MailLog mailLog) {
-        mailLogMapper.insert(mailLog);
+        if (mailLogMapper.insert(mailLog) != 1) {
+            throw new BusinessException("邮件日志保存失败");
+        }
     }
 
     @Override
@@ -43,33 +46,14 @@ public class MailLogServiceImpl implements MailLogService {
 
     @Override
     public void updateById(MailLog mailLog) {
-        mailLogMapper.updateById(mailLog);
-    }
-
-    @Override
-    public void saveOrUpdateByMessageId(MailLog mailLog) {
-        // 1. 根据 messageId 查询已存在的记录
-        MailLog existingLog = mailLogMapper.selectOne(
-                new LambdaQueryWrapper<MailLog>().eq(MailLog::getMessageId, mailLog.getMessageId())
-        );
-        log.info("========= existingLog:{}",existingLog);
-        // 2. 存在则更新状态、失败原因、重试次数等
-        if (existingLog != null) {
-            existingLog.setSendStatus(mailLog.getSendStatus());
-            existingLog.setFailReason(mailLog.getFailReason());
-            existingLog.setRetryCount(mailLog.getRetryCount());
-            existingLog.setSendTime(mailLog.getSendTime());
-            // 其他需要更新的字段...
-            mailLogMapper.updateById(existingLog);
-        } else {
-            // 3. 不存在则插入
-            mailLogMapper.insert(mailLog);
+        if (mailLogMapper.updateById(mailLog) != 1) {
+            throw new BusinessException("邮件日志更新失败");
         }
     }
 
     @Override
     public PageResult<MailLog> getPage(PageParam param) {
-        Page<MailLog> page = new Page<>(param.getPageNum(), param.getPageSize());
+        Page<MailLog> page = param.toPageWithoutOrder();
         LambdaQueryWrapper<MailLog> wrapper = new LambdaQueryWrapper<>();
 
         // 关键词搜索：收件人、主题
@@ -107,11 +91,59 @@ public class MailLogServiceImpl implements MailLogService {
 
     @Override
     public MailLog getById(String id) {
-        return mailLogMapper.selectById(id);
+        MailLog mailLog = mailLogMapper.selectById(id);
+        if (mailLog == null) {
+            throw new BusinessException("邮件日志不存在");
+        }
+        return mailLog;
     }
 
     @Override
     public void deleteById(String id) {
-        mailLogMapper.deleteById(id);
+        if (mailLogMapper.deleteById(id) != 1) {
+            throw new BusinessException("邮件日志不存在");
+        }
+    }
+
+    @Override
+    public MailDeliveryClaim claimDelivery(MailLog mailLog, long sendingLeaseSeconds) {
+        if (sendingLeaseSeconds <= 0) {
+            throw new IllegalArgumentException("邮件投递租约必须大于0");
+        }
+        mailLog.setSendStatus("SENDING");
+        mailLog.setFailReason(null);
+        mailLog.setRetryCount(0);
+        try {
+            if (mailLogMapper.insert(mailLog) != 1) {
+                throw new BusinessException("邮件投递占位保存失败");
+            }
+            return MailDeliveryClaim.CLAIMED;
+        } catch (DuplicateKeyException duplicateKeyException) {
+            MailLog existingLog = getMailLogByMessageId(mailLog.getMessageId());
+            if (existingLog == null) {
+                throw duplicateKeyException;
+            }
+            if ("SUCCESS".equals(existingLog.getSendStatus())) {
+                return MailDeliveryClaim.ALREADY_SUCCESS;
+            }
+
+            int affectedRows = mailLogMapper.claimForDelivery(
+                    mailLog.getMessageId(), mailLog.getSendTime(), sendingLeaseSeconds);
+            if (affectedRows == 1) {
+                return MailDeliveryClaim.CLAIMED;
+            }
+
+            existingLog = getMailLogByMessageId(mailLog.getMessageId());
+            return existingLog != null && "SUCCESS".equals(existingLog.getSendStatus())
+                    ? MailDeliveryClaim.ALREADY_SUCCESS
+                    : MailDeliveryClaim.IN_PROGRESS;
+        }
+    }
+
+    @Override
+    public boolean completeDelivery(String messageId, LocalDateTime claimTime,
+                                    String sendStatus, String failReason) {
+        return mailLogMapper.completeDelivery(
+                messageId, claimTime, sendStatus, failReason) == 1;
     }
 }

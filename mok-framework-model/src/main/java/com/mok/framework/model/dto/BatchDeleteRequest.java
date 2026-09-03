@@ -1,9 +1,15 @@
 package com.mok.framework.model.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
+
 import java.util.List;
 
 public class BatchDeleteRequest {
-    private List<String> ids;
+    @NotEmpty(message = "文件ID列表不能为空")
+    @Size(max = 100, message = "单次最多删除100个文件")
+    private List<@NotBlank(message = "文件ID不能为空") String> ids;
 
     // 无参构造函数
     public BatchDeleteRequest() {

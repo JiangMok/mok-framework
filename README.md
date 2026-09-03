@@ -15,7 +15,7 @@ Mok Framework 是供小团队内部复用的 Java 多模块项目脚手架。新
 | 缓存 | Redis / Lettuce | Spring Boot 管理 |
 | 消息队列 | RabbitMQ | Spring Boot 管理 |
 | 认证授权 | Sa-Token + JWT | 1.45.0 |
-| 搜索引擎 | Elasticsearch（可选） | 3.5.9 |
+| 搜索引擎 | Elasticsearch（可选） | Spring Boot 依赖管理 |
 | AI | Spring AI + OkHttp | 1.0.0 / 4.12.0 |
 | API 文档 | SpringDoc OpenAPI | 2.8.6 |
 | 工具库 | Hutool | 5.8.42 |
@@ -29,20 +29,10 @@ Mok Framework 是供小团队内部复用的 Java 多模块项目脚手架。新
 
 | Starter | 版本 | 作用 |
 |---------|------|------|
-| `top.jiangmok:mok-ratelimiter-spring-boot-starter` | `1.0.0-SNAPSHOT` | Local / Redis 限流与防重复提交 |
-| `top.jiangmok:mok-operation-log-spring-boot-starter` | `1.1.0-SNAPSHOT` | 操作日志采集、异步处理和多后端存储 |
+| `top.jiangmok:mok-ratelimiter-spring-boot-starter` | `1.0.0` | Local / Redis 限流与防重复提交 |
+| `top.jiangmok:mok-operation-log-spring-boot-starter` | `1.1.0` | 操作日志采集、异步处理和多后端存储 |
 
-SNAPSHOT 尚未发布到 Maven Central。其他电脑或 CI 构建脚手架前，需要先在同一 Maven 本地仓库安装两个 Starter：
-
-```bash
-cd mok-ratelimiter-spring-boot-starter
-mvn clean install
-
-cd ../mok-operation-log-spring-boot-starter
-mvn clean install
-```
-
-正式版本发布后，应将父 POM 中的 Starter 版本改为 Maven Central 对应版本。
+当前父 POM 使用发布版 Starter，由团队 Maven `settings.xml` 中配置的仓库统一解析。
 
 ## 项目结构
 
@@ -94,15 +84,14 @@ mok-framework/
 
 - JDK 17+
 - Maven 3.6+
-- MySQL 8.0+
+- MySQL 8.0.13+（完整主库脚本使用函数索引）
 - Redis 6.0+
 
-当前默认 `dev` Profile 使用 Elasticsearch，操作日志采用 RabbitMQ 异步策略，因此默认启动还需要：
+当前默认 `dev-no-es` Profile 使用 MySQL 保存操作日志，并采用 RabbitMQ 异步策略，因此默认启动还需要：
 
 - RabbitMQ 3.9+
-- Elasticsearch
 
-不使用 Elasticsearch 时选择 `dev-no-es`。若不使用 RabbitMQ，还需要将操作日志 `async-strategy` 改为 `async`，并裁剪依赖 RabbitMQ 的业务模块。
+需要 Elasticsearch 时显式选择 `dev`。若不使用 RabbitMQ，还需要将操作日志 `async-strategy` 改为 `async`，并裁剪依赖 RabbitMQ 的业务模块。
 
 ## 快速开始
 
@@ -133,44 +122,78 @@ sa-token.jwt-secret-key=replace_with_a_long_random_secret
 
 # AI
 spring.ai.openai.api-key=your_ai_api_key
-mok.ai.api-key=your_ai_api_key
 ```
 
+也可以通过环境变量 `MOK_AI_API_KEY`、`MOK_AI_BASE_URL` 覆盖 AI 分析服务配置。
+
 ### 2. 初始化数据库
+
+先创建主业务库。仅在 `dev-no-es` 使用 MySQL 保存操作日志时，才需要创建独立操作日志库：
 
 ```sql
 CREATE DATABASE IF NOT EXISTS mf_master_dev DEFAULT CHARACTER SET utf8mb4;
 CREATE DATABASE IF NOT EXISTS mf_operation_log_dev DEFAULT CHARACTER SET utf8mb4;
 ```
 
-按项目需要执行：
+然后按以下顺序执行脚本：
 
-- 核心业务 SQL：`mok-framework-app/src/main/resources/sql/`
-- 操作日志 MySQL 表：`mok-framework-operationLog/src/main/resources/sql/mok_operation_log.sql`
+1. 连接主业务库 `mf_master_dev`（生产环境使用对应主库），执行
+   `mok-framework-app/src/main/resources/sql/mok_framework_schema.sql`。该脚本包含用户、角色、权限、部门、文件、邮件、MQ 失败消息和 AI 提示词配置所需的全部主库表。
+2. 继续连接主业务库，执行
+   `mok-framework-app/src/main/resources/sql/migrations/V20260903__mail_log_message_id_unique.sql`。全新数据库已经包含该唯一索引，迁移会幂等跳过；旧库必须执行此步骤，邮件并发投递依赖 `mail_log.message_id` 唯一约束。
+3. 如果 `mok.operation-log.save-location=mysql`，连接独立操作日志库并执行
+   `mok-framework-operationLog/src/main/resources/sql/mok_operation_log.sql`。使用 Elasticsearch 存储操作日志时不执行此 SQL。
+4. `department-init.sql` 仅保留给已有旧库单独升级部门模块；全新数据库已经由完整主库脚本创建 `sys_dept` 和 `sys_user.dept_id`，不要重复把它作为初始化前置脚本。
+
+旧库执行第 2 步前，应停止应用写入、备份主库，并先检查重复消息 ID：
+
+```sql
+SELECT message_id, COUNT(*) AS duplicate_count
+FROM mail_log
+WHERE message_id IS NOT NULL
+GROUP BY message_id
+HAVING COUNT(*) > 1;
+```
+
+查询有结果时必须先确认每组邮件的真实投递状态并合并重复记录；迁移脚本会在重复数据仍存在时主动终止，不会擅自删除业务日志。
+
+两份建表脚本均不执行 `DROP`，可重复运行且不会清空已有数据。`CREATE TABLE IF NOT EXISTS` 不会自动修正已经存在但结构不同的旧表，旧项目升级前仍应先备份并编写针对性的迁移脚本。
+
+完整主库脚本不会写入固定管理员、默认密码或真实凭据。首次管理员、角色、权限、菜单及关联数据应由具体项目通过受控的一次性迁移或初始化程序安全注入；管理员密码必须使用当前 `BCryptPasswordEncoder` 生成，并通过安全渠道交付和及时轮换，禁止把明文密码或可复用的默认凭据提交到仓库。
 
 操作日志 SQL 不会删除旧的 `sys_operation_log` 表。
 
 ### 3. 构建后端
 
-确认两个 SNAPSHOT Starter 已安装后执行：
+使用团队约定的 Maven、设置文件和 D 盘本地仓库执行：
 
-```bash
-mvn clean test
+```powershell
+& 'D:\Develop\Softwares\Maven\apache-maven-3.9.12\bin\mvn.cmd' `
+  -s 'D:\Develop\Softwares\Maven\apache-maven-3.9.12\conf\settings.xml' `
+  '-Dmaven.repo.local=D:\Develop\Softwares\Maven\repository' `
+  clean test
 ```
 
 ### 4. 启动
 
-默认启动 `dev`（含 ES）：
+默认启动 `dev-no-es`：
 
-```bash
+```powershell
 cd mok-framework-app
-mvn spring-boot:run
+& 'D:\Develop\Softwares\Maven\apache-maven-3.9.12\bin\mvn.cmd' `
+  -s 'D:\Develop\Softwares\Maven\apache-maven-3.9.12\conf\settings.xml' `
+  '-Dmaven.repo.local=D:\Develop\Softwares\Maven\repository' `
+  spring-boot:run
 ```
 
-不使用 ES：
+需要 ES 时：
 
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=dev-no-es
+```powershell
+& 'D:\Develop\Softwares\Maven\apache-maven-3.9.12\bin\mvn.cmd' `
+  -s 'D:\Develop\Softwares\Maven\apache-maven-3.9.12\conf\settings.xml' `
+  '-Dmaven.repo.local=D:\Develop\Softwares\Maven\repository' `
+  '-Dspring-boot.run.profiles=dev' `
+  spring-boot:run
 ```
 
 ### 5. 访问
@@ -183,9 +206,9 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev-no-es
 
 | Profile | 配置文件 | 操作日志存储 | 说明 |
 |---------|----------|--------------|------|
-| `dev`（默认） | `application-dev.yml` | Elasticsearch + RabbitMQ | 完整开发环境 |
-| `dev-no-es` | `application-dev-no-es.yml` | MySQL + RabbitMQ | 不使用 ES |
-| `prod` | `application-prod.yml` | Elasticsearch + RabbitMQ | 生产环境模板 |
+| `dev` | `application-dev.yml` | Elasticsearch + RabbitMQ | 完整开发环境 |
+| `dev-no-es`（默认） | `application-dev-no-es.yml` | MySQL + RabbitMQ | 不使用 ES |
+| `prod` | `application-prod.yml` | MySQL + RabbitMQ | 生产环境模板 |
 
 ## 核心配置
 
@@ -209,6 +232,7 @@ mok:
 
   ai:
     provider: deepseek            # deepseek / openai
+    base-url: https://api.deepseek.com
     model: deepseek-v4-flash
 ```
 
@@ -220,7 +244,7 @@ mok:
 |------|------|------|
 | 登录 | `/api/auth/login` | POST |
 | 刷新 Token | `/api/auth/refresh` | POST |
-| 登出 | `/api/auth/logout` | GET |
+| 登出 | `/api/auth/logout` | POST |
 | 用户分页 | `/api/user/page` | POST |
 | 用户详情 | `/api/user/{id}` | GET |
 | 新增用户 | `/api/user/add` | POST |
@@ -238,6 +262,8 @@ mok:
 | 系统健康 | `/api/system/health` | GET |
 | 操作日志分页 | `/api/operation-log/page` | POST |
 | 操作日志详情 | `/api/operation-log/{id}` | GET |
+
+`POST /api/auth/logout` 的 JSON 请求体为 `{"refreshToken":"..."}`。当前采用用户级会话版本，退出、禁用、删除、本人改密或管理员重置密码都会让该用户此前签发的 access/refresh token 立即失效。系统密码统一要求 8–20 位，并同时包含大写字母、小写字母和数字。
 
 ## Starter 使用示例
 

@@ -44,21 +44,19 @@ public class DataSourceCheckerRunner implements ApplicationRunner {
 
             // 3.遍历所有数据源，检查数据源配置是否正确
             for(String dataSourceName : dataSourceSet){
-                try{
+                try {
                     // 3.1 获取单个具体数据源
                     DataSource dataSource =
                             dynamicRoutingDataSource.getDataSource(dataSourceName);
                     // 3.2 进行检查 --- 查看连接状态
-                    Connection connection = dataSource.getConnection();
-                    // 3.3 是否可用
-                    boolean isValid = connection.isValid(5000);
-                    // 3.4 关闭连接
-                    connection.close();
-                    // 3.5 输出结果
-                    if(isValid){
-                        log.info("========== 数据源 >>> {} 配置正确", dataSourceName);
-                    }else{
-                        log.error("========== 数据源 >>> {} 配置错误: 数据源连接无效", dataSourceName);
+                    try (Connection connection = dataSource.getConnection()) {
+                        // Connection.isValid 的超时单位是秒
+                        boolean isValid = connection.isValid(5);
+                        if (isValid) {
+                            log.info("========== 数据源 >>> {} 配置正确", dataSourceName);
+                        } else {
+                            log.error("========== 数据源 >>> {} 配置错误: 数据源连接无效", dataSourceName);
+                        }
                     }
                 } catch (SQLException sqlException) {
                     log.error("========== 数据源 >>> {} 配置错误: {}", dataSourceName, sqlException.getMessage());

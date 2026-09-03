@@ -17,6 +17,11 @@ public interface FileMapper extends BaseMapper<FileEntity> {
     @Update("UPDATE sys_file SET download_count = download_count + 1, update_time = NOW() " +
             "WHERE id = #{id} AND status = 1 AND is_deleted = 0")
     int incrementDownloadCount(@Param("id") String id);
+
+    /**
+     * 单文件逻辑删除，与批量删除使用相同状态字段。
+     */
+    int logicalDelete(@Param("id") String id, @Param("updateBy") String updateBy);
     
     /**
      * 批量逻辑删除

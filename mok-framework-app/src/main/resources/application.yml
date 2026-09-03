@@ -4,13 +4,13 @@
 spring:
   application:
     name: mok-framework
-    version: 1.0.0
+    version: ${APP_VERSION:0.0.1-SNAPSHOT}
 
   # ------------------------------------
   #  激活的环境 Profile（dev-no-es / prod）
   # ------------------------------------
   profiles:
-    active: dev-no-es
+    active: ${SPRING_PROFILES_ACTIVE:dev-no-es}
 
   # ------------------------------------
   #  外部配置文件导入顺序

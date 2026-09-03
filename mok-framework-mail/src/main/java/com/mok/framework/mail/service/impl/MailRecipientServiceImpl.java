@@ -1,8 +1,6 @@
 package com.mok.framework.mail.service.impl;
 
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.extra.mail.MailAccount;
-import cn.hutool.extra.mail.MailUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -12,12 +10,9 @@ import com.mok.framework.common.PageResult;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.mail.mapper.MailRecipientMapper;
 import com.mok.framework.mail.mapper.MailRecipientTypeMapper;
-import com.mok.framework.mail.service.MailLogService;
 import com.mok.framework.mail.service.MailRecipientService;
 import com.mok.framework.mail.service.MailSenderService;
-import com.mok.framework.mail.util.MailLogBuilder;
 import com.mok.framework.model.dto.MailRecipientDTO;
-import com.mok.framework.model.entity.MailLog;
 import com.mok.framework.model.entity.MailRecipient;
 import com.mok.framework.model.entity.MailRecipientType;
 import com.mok.framework.model.enums.MailType;
@@ -43,21 +38,21 @@ public class MailRecipientServiceImpl implements MailRecipientService {
     private final MailRecipientMapper mailRecipientMapper;
     private final MailRecipientTypeMapper mailRecipientTypeMapper;
     private final MailSenderService mailSenderService;
-    private final MailLogService mailLogService;
+    private final MailDeliveryExecutor mailDeliveryExecutor;
 
     public MailRecipientServiceImpl(MailRecipientMapper mailRecipientMapper,
-                                    MailRecipientTypeMapper mailRecipientTypeMapper,
-                                    MailSenderService mailSenderService,
-                                    MailLogService mailLogService) {
+                                     MailRecipientTypeMapper mailRecipientTypeMapper,
+                                     MailSenderService mailSenderService,
+                                     MailDeliveryExecutor mailDeliveryExecutor) {
         this.mailRecipientMapper = mailRecipientMapper;
         this.mailRecipientTypeMapper = mailRecipientTypeMapper;
         this.mailSenderService = mailSenderService;
-        this.mailLogService = mailLogService;
+        this.mailDeliveryExecutor = mailDeliveryExecutor;
     }
 
     @Override
     public PageResult<MailRecipient> getPage(PageParam param) {
-        Page<MailRecipient> page = new Page<>(param.getPageNum(), param.getPageSize());
+        Page<MailRecipient> page = param.toPageWithoutOrder();
         LambdaQueryWrapper<MailRecipient> wrapper = new LambdaQueryWrapper<>();
 
         if (StringUtils.hasText(param.getKeyword())) {
@@ -112,7 +107,9 @@ public class MailRecipientServiceImpl implements MailRecipientService {
         recipient.setEmail(dto.getEmail());
         recipient.setName(dto.getName());
         recipient.setStatus(dto.getStatus());
-        mailRecipientMapper.insert(recipient);
+        if (mailRecipientMapper.insert(recipient) != 1) {
+            throw new BusinessException("收件人保存失败");
+        }
 
         // 保存类型关联
         saveRecipientTypes(recipient.getId(), dto.getMailTypes());
@@ -129,7 +126,9 @@ public class MailRecipientServiceImpl implements MailRecipientService {
         recipient.setEmail(dto.getEmail());
         recipient.setName(dto.getName());
         recipient.setStatus(dto.getStatus());
-        mailRecipientMapper.updateById(recipient);
+        if (mailRecipientMapper.updateById(recipient) != 1) {
+            throw new BusinessException("收件人更新失败");
+        }
 
         // 先删除旧的类型关联，再插入新的
         mailRecipientTypeMapper.delete(new LambdaQueryWrapper<MailRecipientType>()
@@ -148,13 +147,14 @@ public class MailRecipientServiceImpl implements MailRecipientService {
         mailRecipientTypeMapper.delete(new LambdaQueryWrapper<MailRecipientType>()
                 .eq(MailRecipientType::getRecipientId, id));
         // 删除收件人
-        mailRecipientMapper.deleteById(id);
+        if (mailRecipientMapper.deleteById(id) != 1) {
+            throw new BusinessException("收件人删除失败");
+        }
     }
 
     @Override
     public void testSend(String id) {
         MailRecipient recipient = getById(id);
-        MailAccount mailAccount = mailSenderService.getMailAccount();
 
         String subject = "【MOK App】邮件测试";
         String content = "<h3>邮件发送测试</h3>" +
@@ -163,18 +163,10 @@ public class MailRecipientServiceImpl implements MailRecipientService {
                 "<p>发送时间：" + java.time.LocalDateTime.now() + "</p>";
 
         String messageId = IdUtil.simpleUUID();
-        MailLog mailLog = MailLogBuilder.build(messageId, recipient.getEmail(), subject, content, MailType.NOTIFICATION);
-        try {
-            MailUtil.send(mailAccount, recipient.getEmail(), subject, content, true);
-            mailLog.setSendStatus("SUCCESS");
-        } catch (Exception e) {
-            mailLog.setSendStatus("FAILED");
-            mailLog.setFailReason(e.getMessage());
-            mailLog.setRetryCount(0);
-            throw new RuntimeException("测试邮件发送失败", e);
-        } finally {
-            mailLogService.saveOrUpdateByMessageId(mailLog);
-        }
+        mailDeliveryExecutor.sendAndLog(
+                mailSenderService::getMailAccount,
+                recipient.getEmail(), subject, content,
+                messageId, MailType.NOTIFICATION, true);
         log.info("测试邮件已发送至：{}", recipient.getEmail());
     }
 
@@ -212,7 +204,9 @@ public class MailRecipientServiceImpl implements MailRecipientService {
             type.setId(IdUtil.simpleUUID());
             type.setRecipientId(recipientId);
             type.setMailType(mailType);
-            mailRecipientTypeMapper.insert(type);
+            if (mailRecipientTypeMapper.insert(type) != 1) {
+                throw new BusinessException("收件人邮件类型保存失败");
+            }
         }
     }
 }

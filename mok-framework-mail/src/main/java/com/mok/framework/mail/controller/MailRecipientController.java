@@ -38,7 +38,7 @@ public class MailRecipientController {
     @Operation(summary = "分页查询收件人")
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
-    public R<PageResult<MailRecipient>> page(@RequestBody PageParam param) {
+    public R<PageResult<MailRecipient>> page(@Valid @RequestBody PageParam param) {
         return R.ok(mailRecipientService.getPage(param));
     }
 

@@ -1,6 +1,7 @@
 package com.mok.framework.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -119,6 +120,7 @@ public class MailSender implements Serializable {
     public String getUsername() { return username; }
     public MailSender setUsername(String username) { this.username = username; return this; }
 
+    @JsonIgnore
     public String getPassword() { return password; }
     public MailSender setPassword(String password) { this.password = password; return this; }
 

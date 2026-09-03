@@ -12,10 +12,13 @@ import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mok.framework.auth.service.UserAuthService;
 import com.mok.framework.common.BusinessException;
 import com.mok.framework.common.R;
 import com.mok.framework.common.constant.ResponseCode;
+import com.mok.framework.common.security.SecuritySessionService;
 import com.mok.framework.common.utils.LogUtils;
+import com.mok.framework.model.entity.UserEntity;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,9 +36,15 @@ public class SaTokenConfigure {
     private final Logger log = LogUtils.getLogger(SaTokenConfigure.class);
 
     private final StringRedisTemplate redisTemplate;
+    private final UserAuthService userAuthService;
+    private final SecuritySessionService securitySessionService;
 
-    public SaTokenConfigure(StringRedisTemplate redisTemplate) {
+    public SaTokenConfigure(StringRedisTemplate redisTemplate,
+                            UserAuthService userAuthService,
+                            SecuritySessionService securitySessionService) {
         this.redisTemplate = redisTemplate;
+        this.userAuthService = userAuthService;
+        this.securitySessionService = securitySessionService;
     }
 
     /**
@@ -60,6 +69,7 @@ public class SaTokenConfigure {
                 .addExclude(
                         "/auth/login",        // 登录接口
                         "/auth/refresh",      // 刷新 token
+                        "/auth/logout",       // 支持使用 refresh token 退出
                         "/captcha/**",        // 验证码接口
 
                         // Swagger 相关路径 - 全部放行
@@ -89,6 +99,7 @@ public class SaTokenConfigure {
                 .setAuth(r -> {
                     SaRouter.match(SaHttpMethod.OPTIONS).free(ignore -> {}).back();
                     StpUtil.checkLogin();
+                    checkUserSecurityState();
                 })
 
                 // 3. 前置函数：此处检查黑名单，优先级最高
@@ -130,6 +141,37 @@ public class SaTokenConfigure {
                         return "{\"code\":500,\"msg\":\"系统错误\"}";
                     }
                 });
+    }
+
+    private void checkUserSecurityState() {
+        String userId = StpUtil.getLoginIdAsString();
+        UserEntity userEntity = userAuthService.selectById(userId);
+        if (userEntity == null || !Integer.valueOf(1).equals(userEntity.getStatus())
+                || Integer.valueOf(1).equals(userEntity.getIsDeleted())) {
+            throw new BusinessException(ResponseCode.TOKEN_INVALID, "用户不存在或已被禁用");
+        }
+
+        Object versionClaim;
+        try {
+            versionClaim = StpUtil.getExtra(SecuritySessionService.SESSION_VERSION_CLAIM);
+        } catch (RuntimeException exception) {
+            throw new BusinessException(ResponseCode.TOKEN_INVALID, "Token 会话版本无效");
+        }
+        long tokenVersion = parseSessionVersion(versionClaim);
+        if (!securitySessionService.isCurrentVersion(userId, tokenVersion)) {
+            throw new BusinessException(ResponseCode.TOKEN_INVALID, "Token 已失效，请重新登录");
+        }
+    }
+
+    private long parseSessionVersion(Object versionClaim) {
+        if (versionClaim == null) {
+            throw new BusinessException(ResponseCode.TOKEN_INVALID, "Token 会话版本无效");
+        }
+        try {
+            return Long.parseLong(versionClaim.toString());
+        } catch (NumberFormatException exception) {
+            throw new BusinessException(ResponseCode.TOKEN_INVALID, "Token 会话版本无效");
+        }
     }
 
 }

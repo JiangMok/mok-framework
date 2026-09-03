@@ -1,7 +1,6 @@
 package com.mok.framework.mail.service;
 
 
-import com.mok.framework.model.entity.MailLog;
 import com.mok.framework.model.enums.MailType;
 
 public interface MailService {
@@ -14,5 +13,11 @@ public interface MailService {
     /**
      * 按邮件类型群发 — 查询订阅了该类型的所有启用收件人，逐个发送
      */
-    void sendByMailType(MailType mailType, String subject, String content, boolean isHtml);
+    int sendByMailType(MailType mailType, String subject, String content, boolean isHtml);
+
+    /**
+     * 使用稳定事件 ID 群发；同一事件重试时，每个收件人的消息 ID 保持不变。
+     */
+    int sendByMailType(MailType mailType, String subject, String content,
+                       boolean isHtml, String eventId);
 }

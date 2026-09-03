@@ -89,6 +89,11 @@ public interface RoleService extends IService<RoleEntity> {
     boolean updateRole(RoleDTO roleDTO);
 
     /**
+     * 修改角色状态并失效相关用户权限缓存。
+     */
+    boolean updateRoleStatus(RoleEntity roleEntity);
+
+    /**
      * @description: 根绝角色ID 查询该角色用友的 权限ID
      * @author: JN
      * @date: 2026/1/5 12:49

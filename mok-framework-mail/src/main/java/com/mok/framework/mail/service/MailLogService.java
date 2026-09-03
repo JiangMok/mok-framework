@@ -4,6 +4,8 @@ import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.model.entity.MailLog;
 
+import java.time.LocalDateTime;
+
 public interface MailLogService {
 
     /**
@@ -34,13 +36,18 @@ public interface MailLogService {
     void updateById(MailLog mailLog);
 
     /**
-     * @description:  保存或更新邮件日志（按 messageId 判断）
-     * @author: mok
-     * @date: 2026/6/30 13:52
-     * @param: [mailLog]
-     * @return: void
-    **/
-    void saveOrUpdateByMessageId(MailLog mailLog);
+     * 原子占用一条邮件消息的投递权。
+     * FAILED 或超过租约时间的 SENDING 记录可以被重新占用。
+     */
+    MailDeliveryClaim claimDelivery(MailLog mailLog, long sendingLeaseSeconds);
+
+    /**
+     * 仅由当前占用者提交投递结果。
+     *
+     * @return true 表示状态提交成功，false 表示占用权已经失效
+     */
+    boolean completeDelivery(String messageId, LocalDateTime claimTime,
+                             String sendStatus, String failReason);
 
     /**
      * @description: 分页查询邮件日志

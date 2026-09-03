@@ -2,6 +2,7 @@ package com.mok.framework.mq.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.stp.StpUtil;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.R;
@@ -15,6 +16,7 @@ import com.mok.framework.mq.service.MqFailedMessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -42,7 +44,7 @@ public class MqFailedMessageController {
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:mqFailedMessage:query")
-    public R<PageResult<MqFailedMessage>> page(@RequestBody PageParam param) {
+    public R<PageResult<MqFailedMessage>> page(@Valid @RequestBody PageParam param) {
         return R.ok(mqFailedMessageService.getPage(param));
     }
 
@@ -72,9 +74,9 @@ public class MqFailedMessageController {
     @SaCheckPermission("system:mqFailedMessage:edit")
     public R<Void> resolve(
             @PathVariable String id,
-            @Parameter(description = "处理信息，包含 resolvedBy 和 remark")
+            @Parameter(description = "处理信息，仅接收 remark；处理人取当前登录账号")
             @RequestBody Map<String, String> body) {
-        String resolvedBy = body.getOrDefault("resolvedBy", "admin");
+        String resolvedBy = StpUtil.getLoginIdAsString();
         String remark = body.getOrDefault("remark", "");
         mqFailedMessageService.resolve(id, resolvedBy, remark);
         return R.ok();

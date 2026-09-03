@@ -90,4 +90,16 @@ public class SystemCheckMailMQConfig {
                 .with(SYSTEM_CHECK_MAIL_DLX_ROUTING_KEY);
     }
 
+    /**
+     * 死信记录落库失败后的延迟停车队列，TTL 到期后重新投递到死信队列。
+     */
+    @Bean
+    public Queue systemCheckMailParkingQueue() {
+        return QueueBuilder.durable(SYSTEM_CHECK_MAIL_PARKING_QUEUE)
+                .withArgument("x-message-ttl", SYSTEM_CHECK_MAIL_PARKING_TTL)
+                .withArgument("x-dead-letter-exchange", SYSTEM_CHECK_MAIL_DLX_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", SYSTEM_CHECK_MAIL_DLX_ROUTING_KEY)
+                .build();
+    }
+
 }

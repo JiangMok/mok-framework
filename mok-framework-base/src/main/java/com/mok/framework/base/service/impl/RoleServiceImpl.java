@@ -11,15 +11,16 @@ import com.mok.framework.base.service.RoleService;
 import com.mok.framework.common.BusinessException;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
-import com.mok.framework.common.constant.PermissionCacheConstant;
+import com.mok.framework.common.security.PermissionCacheInvalidator;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.dto.RoleDTO;
 import com.mok.framework.model.entity.*;
 import org.slf4j.Logger;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -41,18 +42,18 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
     private final RolePermissionMapper rolePermissionMapper;
     private final PermissionMapper permissionMapper;
     private final UserMapper userMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final PermissionCacheInvalidator permissionCacheInvalidator;
 
     public RoleServiceImpl(UserRoleMapper userRoleMapper,
                            RolePermissionMapper rolePermissionMapper,
                            PermissionMapper permissionMapper,
                            UserMapper userMapper,
-                           RedisTemplate<String, Object> redisTemplate) {
+                           PermissionCacheInvalidator permissionCacheInvalidator) {
         this.userRoleMapper = userRoleMapper;
         this.rolePermissionMapper = rolePermissionMapper;
         this.permissionMapper = permissionMapper;
         this.userMapper = userMapper;
-        this.redisTemplate = redisTemplate;
+        this.permissionCacheInvalidator = permissionCacheInvalidator;
     }
 
     @Override
@@ -64,7 +65,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
             currentUserRoleIds.add(roleEntity.getId());
         }
         //创建分页对象
-        Page<RoleEntity> page = new Page<>(param.getPageNum(), param.getPageSize());
+        Page<RoleEntity> page = param.toPageWithoutOrder();
         //创建lambda查询包装器
         LambdaQueryWrapper<RoleEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(RoleEntity::getIsDeleted, 0);
@@ -76,8 +77,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
         }
         //根据角色名搜索或者角色编码查询
         if (StringUtils.hasText(param.getKeyword())) {
-            wrapper.like(RoleEntity::getRoleName, param.getKeyword())
-                    .or().like(RoleEntity::getRoleCode, param.getKeyword());
+            wrapper.and(w -> w.like(RoleEntity::getRoleName, param.getKeyword())
+                    .or().like(RoleEntity::getRoleCode, param.getKeyword()));
         }
         //按状态查询
         if (param.get("status") != null) {
@@ -193,6 +194,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
             }
         }
 
+        invalidateAroundCommit(() -> permissionCacheInvalidator.evictUserPermissions(userId));
+
         // 修改：记录操作日志
         log.info("为用户 {} 分配角色: {}", userId, roleIds);
         return true;
@@ -237,6 +240,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
         roleEntitySave.setId(roleId);
         //逻辑删除 : 1=已删除,0=未删除
         roleEntitySave.setIsDeleted(1);
+        rolePermissionMapper.delete(new LambdaQueryWrapper<RolePermissionEntity>()
+                .eq(RolePermissionEntity::getRoleId, roleId));
         return removeById(roleEntitySave);
     }
 
@@ -308,7 +313,19 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
             assignRolePermissions(roleEntity.getId(), roleDTO.getPermissionIds());
         }
 
+        evictRoleUsersAfterCommit(roleEntity.getId());
+
         return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateRoleStatus(RoleEntity roleEntity) {
+        boolean updated = updateById(roleEntity);
+        if (updated) {
+            evictRoleUsersAfterCommit(roleEntity.getId());
+        }
+        return updated;
     }
 
     @Override
@@ -342,6 +359,9 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
         if (role == null) {
             throw new BusinessException("角色不存在");
         }
+        if ("ROLE_ADMIN".equals(role.getRoleCode())) {
+            throw new BusinessException("不能直接修改超级管理员角色权限");
+        }
 
         // 修改：验证权限ID的有效性
         if (permissionIds != null && !permissionIds.isEmpty()) {
@@ -368,13 +388,14 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
 
             try {
                 rolePermissionMapper.insertBatch(rolePermissionEntities);
-                // 清空受影响的用户的权限
-                clearUserPermissionCacheByRole(roleId);
             } catch (Exception e) {
                 log.error("批量插入角色权限失败", e);
                 throw new BusinessException("分配权限失败");
             }
         }
+
+        // 即使权限列表为空也必须清除缓存，否则被移除的权限仍可继续通过鉴权。
+        evictRoleUsersAfterCommit(roleId);
 
         log.info("========= 角色{}权限分配完成，分配权限数：{}", roleId,
                 permissionIds != null ? permissionIds.size() : 0);
@@ -395,39 +416,46 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
     }
 
     /**
-     * 清空所有用户的权限
-     */
-    private void clearAllPermissionCache() {
-        // 定义缓存key的模式，匹配所有用户权限和菜单缓存
-        String pattern = "security:user:permissions:*";
-        // keys(pattern)获取所有匹配模式的key
-        // delete(keys)批量删除这些key
-        // 注意：keys操作在生产环境中可能影响性能，大数据量时建议使用scan命令
-        redisTemplate.delete(redisTemplate.keys(pattern));
-
-        // 记录调试日志
-        log.info("========== 已清除所有用户权限缓存");
-    }
-
-    /**
      * 角色权限变更后，精准清除拥有该角色的所有用户的权限缓存
      */
     public void clearUserPermissionCacheByRole(String roleId) {
-        // 1. 查询拥有该角色的所有用户ID
-        List<String> userIds = userRoleMapper.selectUserIdsByRoleId(roleId);
+        evictRoleUsersAfterCommit(roleId);
+    }
 
+    private void evictRoleUsersAfterCommit(String roleId) {
+        List<String> userIds = userRoleMapper.selectUserIdsByRoleId(roleId);
         if (userIds == null || userIds.isEmpty()) {
             log.info("========== 角色 {} 权限变更，但无用户拥有此角色，无需清除缓存", roleId);
             return;
         }
+        List<String> affectedUserIds = List.copyOf(userIds);
+        invalidateAroundCommit(() -> {
+            permissionCacheInvalidator.evictUserPermissions(affectedUserIds);
+            log.info("========== 角色 {} 权限变更，已清除 {} 个用户的权限缓存",
+                    roleId, affectedUserIds.size());
+        });
+    }
 
-        // 2. 生成每个用户的权限缓存Key
-        List<String> cacheKeys = userIds.stream()
-                .map(userId -> String.format(PermissionCacheConstant.USER_PERMISSION_KEY, userId))
-                .toList();
+    private void invalidateAroundCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void beforeCommit(boolean readOnly) {
+                action.run();
+            }
 
-        // 3. 批量删除
-        redisTemplate.delete(cacheKeys);
-        log.info("========== 角色 {} 权限变更，已清除 {} 个用户的权限缓存", roleId, userIds.size());
+            @Override
+            public void afterCommit() {
+                try {
+                    action.run();
+                } catch (RuntimeException exception) {
+                    // 数据库已经提交，不能再向调用方伪装成可回滚失败。
+                    log.error("角色权限已提交，但提交后的缓存版本推进失败", exception);
+                }
+            }
+        });
     }
 }

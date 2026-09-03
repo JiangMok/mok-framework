@@ -5,6 +5,7 @@ import com.mok.framework.auth.mapper.PermissionAuthMapper;
 import com.mok.framework.auth.mapper.UserAuthMapper;
 import com.mok.framework.auth.service.PermissionAuthService;
 import com.mok.framework.common.constant.PermissionCacheConstant;
+import com.mok.framework.common.security.PermissionCacheInvalidator;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.entity.UserEntity;
 import org.slf4j.Logger;
@@ -23,13 +24,16 @@ public class PermissionAuthServiceImpl implements PermissionAuthService {
     private final PermissionAuthMapper permissionMapper;
     private final UserAuthMapper userAuthMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final PermissionCacheInvalidator permissionCacheInvalidator;
 
     public PermissionAuthServiceImpl(PermissionAuthMapper permissionMapper,
                                     RedisTemplate<String, Object> redisTemplate,
-                                    UserAuthMapper userAuthMapper) {
+                                    UserAuthMapper userAuthMapper,
+                                    PermissionCacheInvalidator permissionCacheInvalidator) {
         this.permissionMapper = permissionMapper;
         this.redisTemplate = redisTemplate;
         this.userAuthMapper = userAuthMapper;
+        this.permissionCacheInvalidator = permissionCacheInvalidator;
     }
 
     @Override
@@ -39,7 +43,9 @@ public class PermissionAuthServiceImpl implements PermissionAuthService {
             return Collections.emptyList();
         }
         // 2. 用户存在,先检查 redis 缓存
-        String permissionKey = String.format(PermissionCacheConstant.USER_PERMISSION_KEY, userId);
+        String cacheVersion = permissionCacheInvalidator.getPermissionCacheVersion(userId);
+        String permissionKey = String.format(
+                PermissionCacheConstant.USER_PERMISSION_KEY, userId, cacheVersion);
         Object cached = redisTemplate.opsForValue().get(permissionKey);
         // 2.1 缓存命中 : 空值标记
         if (PermissionCacheConstant.NULL_VALUE.equals(cached)) {
@@ -47,15 +53,23 @@ public class PermissionAuthServiceImpl implements PermissionAuthService {
             return Collections.emptyList();
         }
         // 2.2 缓存命中 : 正常返回
-        if (cached instanceof List) {
-            List<String> permissionList = (List<String>) cached;
+        if (cached instanceof List<?> cachedList) {
+            List<String> permissionList = cachedList.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .toList();
             log.debug("========== 缓存命中权限列表，用户 {} 拥有 {} 个权限", userId, permissionList.size());
             return permissionList;
         }
         // 2.3 缓存未命中 : 查询数据库
         log.debug("========== 缓存未命中权限列表，用户 {} 开始查询数据库权限",userId);
         List<String> permissionCodeList = permissionMapper.selectPermissionCodeByUserId(userId);
-        if (permissionCodeList == null) {
+        String latestVersion = permissionCacheInvalidator.getPermissionCacheVersion(userId);
+        if (!cacheVersion.equals(latestVersion)) {
+            // 查询期间权限已发生变化，不允许把旧结果写回新版本缓存。
+            return listPermissionCodeByUserId(userId);
+        }
+        if (permissionCodeList == null || permissionCodeList.isEmpty()) {
             cacheNullValue(permissionKey);
             return Collections.emptyList();
         }
@@ -79,7 +93,8 @@ public class PermissionAuthServiceImpl implements PermissionAuthService {
         }
         // 4.如果不存在,查询一下数据库
         LambdaQueryWrapper<UserEntity> userEntityLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        userEntityLambdaQueryWrapper.eq(UserEntity::getId, userId);
+        userEntityLambdaQueryWrapper.eq(UserEntity::getId, userId)
+                .eq(UserEntity::getStatus, 1);
         boolean userExisted = userAuthMapper.exists(userEntityLambdaQueryWrapper);
         // 5.综合判断是否存在数据库中,然后缓存存在的数据或者不存在的数据
         log.info("========== 用户>>{}>>{}>>于系统数据库", userId, userExisted ? "存在" : "不存在");

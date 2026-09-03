@@ -18,6 +18,7 @@ public class CaptchaConfig {
     }
 
     public void setWidth(Integer width) {
+        requirePositive(width, "验证码宽度");
         this.width = width;
     }
 
@@ -26,6 +27,7 @@ public class CaptchaConfig {
     }
 
     public void setHeight(Integer height) {
+        requirePositive(height, "验证码高度");
         this.height = height;
     }
 
@@ -34,6 +36,7 @@ public class CaptchaConfig {
     }
 
     public void setLength(Integer length) {
+        requirePositive(length, "验证码长度");
         this.length = length;
     }
 
@@ -42,6 +45,7 @@ public class CaptchaConfig {
     }
 
     public void setExpire(Integer expire) {
+        requirePositive(expire, "验证码有效期");
         this.expire = expire;
     }
 
@@ -50,7 +54,16 @@ public class CaptchaConfig {
     }
 
     public void setType(String type) {
+        if (!"math".equals(type) && !"char".equals(type)) {
+            throw new IllegalArgumentException("验证码类型仅支持 math 或 char");
+        }
         this.type = type;
+    }
+
+    private void requirePositive(Integer value, String name) {
+        if (value == null || value <= 0) {
+            throw new IllegalArgumentException(name + "必须大于0");
+        }
     }
 
     @Override

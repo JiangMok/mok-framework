@@ -20,5 +20,10 @@ public class SystemCheckMailMQConstant {
     // 系统检查-死信路由键
     public static final String SYSTEM_CHECK_MAIL_DLX_ROUTING_KEY = "system.check.mail.dlx.routing";
 
-    public static final int SYSTEM_CHECK_MAIL_MAX_RETRY = 3;
+    // 死信持久化失败时进入延迟停车队列，避免数据库故障期间立即热循环
+    public static final String SYSTEM_CHECK_MAIL_PARKING_QUEUE = "system.check.mail.parking.queue";
+    public static final int SYSTEM_CHECK_MAIL_PARKING_TTL = 30000;
+
+    // Spring AMQP 默认 3 次尝试包含首次消费，因此对应 2 次重试。
+    public static final int SYSTEM_CHECK_MAIL_MAX_RETRY = 2;
 }

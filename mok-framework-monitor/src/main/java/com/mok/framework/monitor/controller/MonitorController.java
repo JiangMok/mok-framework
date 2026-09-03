@@ -9,6 +9,7 @@ import com.mok.framework.monitor.service.HealthCheckService;
 import com.mok.framework.monitor.service.impl.HealthCheckServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,9 +34,15 @@ public class MonitorController {
     );
 
     private final HealthCheckService healthCheckService;
+    private final String applicationName;
+    private final String applicationVersion;
 
-    public MonitorController(HealthCheckService healthCheckService) {
+    public MonitorController(HealthCheckService healthCheckService,
+                             @Value("${spring.application.name:mok-framework}") String applicationName,
+                             @Value("${spring.application.version:unknown}") String applicationVersion) {
         this.healthCheckService = healthCheckService;
+        this.applicationName = applicationName;
+        this.applicationVersion = applicationVersion;
     }
 
     /**
@@ -51,8 +58,8 @@ public class MonitorController {
     @GetMapping("/info")
     public R<Map<String, Object>> getSystemInfo() {
         Map<String, Object> info = new LinkedHashMap<>();
-        info.put("appName", "MOK-framework");
-        info.put("version", "1.1.0");
+        info.put("appName", applicationName);
+        info.put("version", applicationVersion);
         info.put("timestamp", System.currentTimeMillis());
         info.put("upTime", getUptime());
 

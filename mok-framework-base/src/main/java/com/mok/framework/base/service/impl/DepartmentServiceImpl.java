@@ -48,7 +48,7 @@ public class DepartmentServiceImpl
 
     @Override
     public PageResult<DepartmentEntity> getPageList(PageParam param) {
-        Page<DepartmentEntity> page = new Page<>(param.getPageNum(), param.getPageSize());
+        Page<DepartmentEntity> page = param.toPageWithoutOrder();
         LambdaQueryWrapper<DepartmentEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DepartmentEntity::getIsDeleted, 0);
 

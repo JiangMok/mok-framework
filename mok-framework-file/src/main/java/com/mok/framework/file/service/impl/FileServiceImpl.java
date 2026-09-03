@@ -14,6 +14,7 @@ import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.common.config.storage.FileStorageConfig;
 import com.mok.framework.file.mapper.FileMapper;
 import com.mok.framework.file.service.FileService;
+import com.mok.framework.file.validation.FileContentValidator;
 import com.mok.framework.model.dto.FileUploadResponse;
 import com.mok.framework.model.entity.FileEntity;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +25,8 @@ import org.slf4j.Logger;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,6 +40,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -70,31 +75,36 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
             Map.entry("application/x-rar-compressed", Set.of("rar")));
     private final FileStorageConfig fileStorageConfig;
     private final HttpServletRequest request;
+    private final FileContentValidator fileContentValidator;
 
     public FileServiceImpl(FileStorageConfig fileStorageConfig,
-                           HttpServletRequest request) {
+                           HttpServletRequest request,
+                           FileContentValidator fileContentValidator) {
         this.fileStorageConfig = fileStorageConfig;
         this.request = request;
+        this.fileContentValidator = fileContentValidator;
     }
 
     @Override
     public PageResult<FileEntity> getPageList(PageParam param) {
         //创建分页对象
-        Page<FileEntity> page = new Page<>(param.getPageNum(), param.getPageSize());
+        Page<FileEntity> page = param.toPageWithoutOrder();
         //创建lambda查询包装器
         LambdaQueryWrapper<FileEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FileEntity::getStatus, 1)
+                .eq(FileEntity::getIsDeleted, 0);
         //按文件类型查询
-        if (param.getParams().get("fileType") != null) {
+        if (param.getParams() != null && param.getParams().get("fileType") != null) {
             wrapper.eq(FileEntity::getFileType, param.getParams().get("fileType"));
         }
         //按上传用户ID搜索
-        if (param.getParams().get("uploadUserId") != null) {
+        if (param.getParams() != null && param.getParams().get("uploadUserId") != null) {
             wrapper.eq(FileEntity::getUploadUserId, param.getParams().get("uploadUserId"));
         }
         //根据原始文件名或者存储文件名模糊搜索
         if (StringUtils.hasText(param.getKeyword())) {
-            wrapper.like(FileEntity::getOriginalName, param.getKeyword())
-                    .or().like(FileEntity::getStorageName, param.getKeyword());
+            wrapper.and(search -> search.like(FileEntity::getOriginalName, param.getKeyword())
+                    .or().like(FileEntity::getStorageName, param.getKeyword()));
         }
         if (param.getOrderBy() != null) {
             if ("asc".equalsIgnoreCase(param.getOrder())) {
@@ -108,6 +118,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
         }
         //执行分页查询
         IPage<FileEntity> result = baseMapper.selectPage(page, wrapper);
+        result.getRecords().forEach(this::hideNonPublicFileUrl);
         //转换为自定义的分页结果
         return PageResult.fromIPage(result);
     }
@@ -115,6 +126,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
     @Override
     @Transactional(rollbackFor = Exception.class)
     public FileUploadResponse upload(MultipartFile file, Integer businessType) {
+        Path fullPath = null;
         try {
             // 1. 验证文件
             validateFile(file, businessType);
@@ -132,12 +144,13 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
 
             // 4. 保存到本地
             Path basePath = Paths.get(fileStorageConfig.getBasePath()).toAbsolutePath().normalize();
-            Path fullPath = basePath.resolve(relativePath).normalize();
+            fullPath = basePath.resolve(relativePath).normalize();
             if (!fullPath.startsWith(basePath)) {
                 throw new FileUploadException("文件存储路径无效");
             }
             Files.createDirectories(fullPath.getParent());
             file.transferTo(fullPath.toFile());
+            registerRollbackCleanup(fullPath);
 
             // 5. 保存到数据库
             FileEntity fileEntity = new FileEntity();
@@ -146,8 +159,10 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
             fileEntity.setOriginalName(originalName);
             fileEntity.setStorageName(storageName);
             fileEntity.setFilePath(relativePath);
-            // 关键修改：使用完整的URL
-            String fileUrl = fileStorageConfig.getFullFileUrl(relativePath);
+            // 只有头像允许使用公开 /uploads/** URL；普通文件必须通过鉴权下载接口获取。
+            String fileUrl = Integer.valueOf(1).equals(businessType)
+                    ? fileStorageConfig.getFullFileUrl(relativePath)
+                    : fileStorageConfig.getFullDownloadUrl(fileEntity.getId());
             fileEntity.setFileUrl(fileUrl);
             fileEntity.setFileSize(fileSize);
             fileEntity.setFileType(getFileType(mimeType));
@@ -156,12 +171,10 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
             fileEntity.setUploadIp(getClientIp());
             fileEntity.setCreateTime(LocalDateTime.now());
 
-            save(fileEntity);
-            // ... 在保存文件后添加日志
-            log.info("文件保存信息: 路径={}, 访问URL={}, 完整URL={}",
-                    fullPath.toString(),
-                    fileEntity.getFileUrl(),
-                    String.format(fileStorageConfig.getBasePath()+"%s", fileEntity.getFileUrl()));
+            if (!save(fileEntity)) {
+                throw new FileUploadException("文件元数据保存失败");
+            }
+            log.info("文件保存信息: 路径={}, 访问URL={}", fullPath, fileEntity.getFileUrl());
             // 6. 返回结果
             return FileUploadResponse.builder()
                     .id(fileEntity.getId())
@@ -171,9 +184,16 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
                     .fileType(fileEntity.getFileType())
                     .build();
 
+        } catch (FileUploadException e) {
+            deleteStoredFileQuietly(fullPath);
+            throw e;
         } catch (IOException e) {
+            deleteStoredFileQuietly(fullPath);
             log.error("文件上传失败", e);
-            throw new RuntimeException("文件上传失败: " + e.getMessage());
+            throw new FileUploadException("文件上传失败: " + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            deleteStoredFileQuietly(fullPath);
+            throw e;
         }
     }
 
@@ -202,6 +222,16 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
         String extension = FilenameUtils.getExtension(fileEntity.getStorageName()).toLowerCase(Locale.ROOT);
         if (!AVATAR_MIME_TYPES.contains(mimeType)
                 || !MIME_EXTENSIONS.getOrDefault(mimeType, Set.of()).contains(extension)) {
+            return null;
+        }
+        Path storedPath = resolveStoredPath(fileEntity);
+        try {
+            if (!fileContentValidator.matches(storedPath, mimeType)) {
+                log.warn("公开头像真实内容与声明类型不匹配: fileId={}", fileEntity.getId());
+                return null;
+            }
+        } catch (IOException exception) {
+            log.warn("读取公开头像内容失败: fileId={}", fileEntity.getId(), exception);
             return null;
         }
         return fileEntity;
@@ -247,36 +277,40 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(String id) {
-        FileEntity fileEntity = getFileEntity(id);
-
-        // 逻辑删除
-        fileEntity.setStatus(0);
-        fileEntity.setUpdateBy(StpUtil.getLoginId().toString());
-        updateById(fileEntity);
-//
-//        //可选：物理删除文件
-//        Path filePath = Paths.get(fileStorageConfig.getBasePath(), fileEntity.getFilePath());
-//        try {
-//            Files.deleteIfExists(filePath);
-//        } catch (IOException e) {
-//            throw new BusinessException("删除失败", e);
-//        }
+        String currentUserId = StpUtil.getLoginId().toString();
+        if (baseMapper.logicalDelete(id, currentUserId) != 1) {
+            throw new FileNotFoundException(id);
+        }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void batchDelete(List<String> ids) {
         if (ids == null || ids.isEmpty()) {
-            return;
+            throw new IllegalArgumentException("文件ID列表不能为空");
         }
 
+        List<String> uniqueIds = new ArrayList<>(new LinkedHashSet<>(ids));
+        List<FileEntity> activeFiles = baseMapper.selectList(new LambdaQueryWrapper<FileEntity>()
+                .in(FileEntity::getId, uniqueIds)
+                .eq(FileEntity::getStatus, 1)
+                .eq(FileEntity::getIsDeleted, 0));
+        if (activeFiles.size() != uniqueIds.size()) {
+            throw new FileNotFoundException(String.join(",", uniqueIds));
+        }
         String currentUserId = StpUtil.getLoginId().toString();
-        baseMapper.batchDelete(ids, currentUserId);
+        if (baseMapper.batchDelete(uniqueIds, currentUserId) != uniqueIds.size()) {
+            throw new FileUploadException("批量删除文件失败，请重试");
+        }
     }
 
     private void validateFile(MultipartFile file, Integer businessType) {
-        if (file.isEmpty()) {
+        if (file == null || file.isEmpty()) {
             throw new FileUploadException("文件不能为空");
+        }
+
+        if (!Integer.valueOf(1).equals(businessType) && !Integer.valueOf(2).equals(businessType)) {
+            throw new FileUploadException("文件业务类型不正确");
         }
 
         String originalName = file.getOriginalFilename();
@@ -293,6 +327,14 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
 
         if (Integer.valueOf(1).equals(businessType) && !AVATAR_MIME_TYPES.contains(mimeType)) {
             throw new FileUploadException("头像仅支持 JPG、PNG、GIF 或 WebP 图片");
+        }
+
+        try {
+            if (!fileContentValidator.matches(file, mimeType)) {
+                throw new FileUploadException("文件真实内容与声明类型不匹配");
+            }
+        } catch (IOException exception) {
+            throw new FileUploadException("无法读取文件内容", exception);
         }
 
         // 文件大小限制在配置中通过Spring的multipart配置控制
@@ -325,7 +367,8 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
     private FileEntity getFileEntity(String id) {
         LambdaQueryWrapper<FileEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(FileEntity::getId, id)
-                .eq(FileEntity::getStatus, 1);
+                .eq(FileEntity::getStatus, 1)
+                .eq(FileEntity::getIsDeleted, 0);
 
         FileEntity fileEntity = getOne(queryWrapper);
         if (fileEntity == null) {
@@ -337,11 +380,43 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileEntity> impleme
     private FileEntity convertToFileInfo(FileEntity fileEntity) {
         FileEntity fileInfo = new FileEntity();
         BeanUtils.copyProperties(fileEntity, fileInfo);
+        hideNonPublicFileUrl(fileInfo);
 
         // TODO: 如果需要，这里可以查询上传用户的姓名
         // fileInfo.setUploadUserName(userService.getUsernameById(fileEntity.getUploadUserId()));
 
         return fileInfo;
+    }
+
+    private void hideNonPublicFileUrl(FileEntity fileEntity) {
+        if (!Integer.valueOf(1).equals(fileEntity.getBusinessType())) {
+            fileEntity.setFileUrl(fileStorageConfig.getFullDownloadUrl(fileEntity.getId()));
+        }
+    }
+
+    private void registerRollbackCleanup(Path storedPath) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != TransactionSynchronization.STATUS_COMMITTED) {
+                    deleteStoredFileQuietly(storedPath);
+                }
+            }
+        });
+    }
+
+    private void deleteStoredFileQuietly(Path storedPath) {
+        if (storedPath == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(storedPath);
+        } catch (IOException cleanupException) {
+            log.error("回滚上传文件失败: {}", storedPath, cleanupException);
+        }
     }
 
     private Path resolveStoredPath(FileEntity fileEntity) {

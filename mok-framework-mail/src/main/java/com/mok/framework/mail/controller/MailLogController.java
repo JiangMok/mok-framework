@@ -13,6 +13,7 @@ import top.jiangmok.ratelimiter.annotation.RateLimit;
 import top.jiangmok.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -38,7 +39,7 @@ public class MailLogController {
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @PostMapping("/page")
     @SaCheckPermission("system:mailLog:query")
-    public R<PageResult<MailLog>> page(@RequestBody PageParam param) {
+    public R<PageResult<MailLog>> page(@Valid @RequestBody PageParam param) {
         return R.ok(mailLogService.getPage(param));
     }
 

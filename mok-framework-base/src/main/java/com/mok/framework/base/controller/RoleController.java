@@ -202,7 +202,7 @@ public class RoleController {
             return R.error(403, "不能修改超级管理员角色的状态");
         }
         roleEntity.setStatus(status);
-        roleService.updateById(roleEntity);
+        roleService.updateRoleStatus(roleEntity);
 
         String statusText = status == 1 ? "启用" : "禁用";
         log.info("修改角色状态：{} -> {}", roleEntity.getRoleName(), statusText);

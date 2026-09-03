@@ -1,5 +1,7 @@
 package com.mok.framework.common;
 
+import com.mok.framework.common.constant.ResponseCode;
+
 import java.util.Objects;
 
 /**
@@ -18,7 +20,7 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(String message) {
         super(message);
-        this.code = 500;
+        this.code = ResponseCode.BUSINESS_ERROR;
     }
 
     public BusinessException(Integer code, String message) {
@@ -28,7 +30,7 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(String message, Throwable cause) {
         super(message, cause);
-        this.code = 500;
+        this.code = ResponseCode.BUSINESS_ERROR;
     }
 
     public BusinessException(Integer code, String message, Throwable cause) {
@@ -42,7 +44,7 @@ public class BusinessException extends RuntimeException {
     }
 
     public static class Builder {
-        private Integer code = 500;
+        private Integer code = ResponseCode.BUSINESS_ERROR;
         private String message;
         private Throwable cause;
 

@@ -1,5 +1,6 @@
 package com.mok.framework.monitor.service.impl;
 
+import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.monitor.service.HealthCheckService;
 import com.zaxxer.hikari.HikariDataSource;
@@ -7,10 +8,10 @@ import org.slf4j.Logger;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -20,7 +21,9 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.ThreadMXBean;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,22 +39,25 @@ import java.util.Map;
 public class HealthCheckServiceImpl implements HealthCheckService {
     private static final Logger log = LogUtils.getLogger(HealthCheckServiceImpl.class);
     private final DataSource dataSource;
-    private final JdbcTemplate jdbcTemplate;
     private final RedisConnectionFactory redisConnectionFactory;
 //    private final ElasticsearchClient elasticsearchClient;
     private final RabbitTemplate rabbitTemplate;
+    private final String applicationName;
+    private final String applicationVersion;
 
     public HealthCheckServiceImpl(DataSource dataSource,
-                                  JdbcTemplate jdbcTemplate,
                                   RedisConnectionFactory redisConnectionFactory,
 //                                  ElasticsearchClient elasticsearchClient,
-                                  RabbitTemplate rabbitTemplate
+                                  RabbitTemplate rabbitTemplate,
+                                  @Value("${spring.application.name:mok-framework}") String applicationName,
+                                  @Value("${spring.application.version:unknown}") String applicationVersion
     ) {
         this.dataSource = dataSource;
-        this.jdbcTemplate = jdbcTemplate;
         this.redisConnectionFactory = redisConnectionFactory;
 //        this.elasticsearchClient = elasticsearchClient;
         this.rabbitTemplate = rabbitTemplate;
+        this.applicationName = applicationName;
+        this.applicationVersion = applicationVersion;
     }
 
     /**
@@ -118,8 +124,8 @@ public class HealthCheckServiceImpl implements HealthCheckService {
         else if (hasWarning) overall = "WARNING";
         else overall = "UP";
         healthInfo.put("status", overall);
-        healthInfo.put("application", "MOK-Framework");
-        healthInfo.put("version", "1.1.0");
+        healthInfo.put("application", applicationName);
+        healthInfo.put("version", applicationVersion);
 
         return healthInfo;
     }
@@ -136,11 +142,33 @@ public class HealthCheckServiceImpl implements HealthCheckService {
                 boolean isValid = connection.isValid(5);
                 long responseTime = System.currentTimeMillis() - startTime;
 
-                // 2. 执行简单查询
-                String version = jdbcTemplate.queryForObject(
-                        "SELECT VERSION()", String.class
-                );
-                int userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_user WHERE is_deleted = 0", Integer.class);
+                if (!isValid) {
+                    return HealthCheckResult.builder()
+                            .status("DOWN")
+                            .details(Map.of(
+                                    "responseTime", responseTime + "ms",
+                                    "connection", "Invalid"))
+                            .build();
+                }
+
+                // 2. 复用同一连接执行简单查询，避免连接池较小时再次申请连接造成误报。
+                String version;
+                int userCount;
+                try (Statement statement = connection.createStatement();
+                     ResultSet versionResult = statement.executeQuery("SELECT VERSION()")) {
+                    if (!versionResult.next()) {
+                        throw new SQLException("数据库版本查询无结果");
+                    }
+                    version = versionResult.getString(1);
+                }
+                try (Statement statement = connection.createStatement();
+                     ResultSet countResult = statement.executeQuery(
+                             "SELECT COUNT(*) FROM sys_user WHERE is_deleted = 0")) {
+                    if (!countResult.next()) {
+                        throw new SQLException("用户数量查询无结果");
+                    }
+                    userCount = countResult.getInt(1);
+                }
 
                 return HealthCheckResult.builder()
                         .status("UP")
@@ -178,9 +206,6 @@ public class HealthCheckServiceImpl implements HealthCheckService {
                 // 执行 PING 命令
                 String pong = connection.ping();
                 long responseTime = System.currentTimeMillis() - startTime;
-
-                // 获取 Redis 信息
-                String info = String.valueOf(connection.info("server"));
 
                 return HealthCheckResult.builder()
                         .status("UP")
@@ -365,11 +390,11 @@ public class HealthCheckServiceImpl implements HealthCheckService {
             details.put("peak", peakThreads);
             details.put("daemon", daemonThreads);
             details.put("totalStarted", totalStarted);
-            details.put("deadlocked", threadBean.findDeadlockedThreads() != null
-                    ? threadBean.findDeadlockedThreads().length : 0);
+            long[] deadlockedThreadIds = threadBean.findDeadlockedThreads();
+            int deadlockedThreads = deadlockedThreadIds != null ? deadlockedThreadIds.length : 0;
+            details.put("deadlocked", deadlockedThreads);
 
-            // 活跃线程超过 500 视为警告
-            String status = activeThreads > 500 ? "WARNING" : "UP";
+            String status = determineThreadStatus(activeThreads, deadlockedThreads);
 
             return HealthCheckResult.builder()
                     .status(status)
@@ -441,12 +466,7 @@ public class HealthCheckServiceImpl implements HealthCheckService {
 
                 details.put(root.getPath(), diskInfo);
 
-                // 使用率超过 90% 视为警告
-                if (usedPercent > 90) {
-                    worstStatus = "WARNING";
-                } else if (usedPercent > 95) {
-                    worstStatus = "DOWN";
-                }
+                worstStatus = determineDiskStatus(worstStatus, usedPercent);
             }
 
             return HealthCheckResult.builder()
@@ -467,20 +487,37 @@ public class HealthCheckServiceImpl implements HealthCheckService {
      */
     private HealthCheckResult checkConnectionPool() {
         try {
+            if (dataSource instanceof DynamicRoutingDataSource dynamicRoutingDataSource) {
+                Map<String, Object> poolDetails = new HashMap<>();
+                String status = "UP";
+
+                for (Map.Entry<String, DataSource> entry :
+                        dynamicRoutingDataSource.getDataSources().entrySet()) {
+                    HikariDataSource hikariDataSource = unwrapHikariDataSource(entry.getValue());
+                    if (hikariDataSource == null || hikariDataSource.getHikariPoolMXBean() == null) {
+                        poolDetails.put(entry.getKey(), Map.of("info", "非 HikariCP 或连接池尚未初始化"));
+                        continue;
+                    }
+
+                    Map<String, Object> detail = buildPoolDetails(hikariDataSource);
+                    poolDetails.put(entry.getKey(), detail);
+                    if ((Integer) detail.get("pending") > 0) {
+                        status = "WARNING";
+                    }
+                }
+
+                return HealthCheckResult.builder()
+                        .status(status)
+                        .details(Map.of("dataSources", poolDetails))
+                        .build();
+            }
+
             if (dataSource instanceof HikariDataSource) {
                 HikariDataSource hikariDs = (HikariDataSource) dataSource;
-                com.zaxxer.hikari.HikariPoolMXBean poolBean = hikariDs.getHikariPoolMXBean();
-
-                Map<String, Object> details = new HashMap<>();
-                details.put("active", poolBean.getActiveConnections());
-                details.put("idle", poolBean.getIdleConnections());
-                details.put("total", poolBean.getTotalConnections());
-                details.put("pending", poolBean.getThreadsAwaitingConnection());
-                details.put("maxPoolSize", hikariDs.getMaximumPoolSize());
-                details.put("connectionTimeout", hikariDs.getConnectionTimeout() + "ms");
+                Map<String, Object> details = buildPoolDetails(hikariDs);
 
                 // 等待线程 > 0 视为警告
-                String status = poolBean.getThreadsAwaitingConnection() > 0 ? "WARNING" : "UP";
+                String status = (Integer) details.get("pending") > 0 ? "WARNING" : "UP";
 
                 return HealthCheckResult.builder()
                         .status(status)
@@ -499,6 +536,49 @@ public class HealthCheckServiceImpl implements HealthCheckService {
                     .details(Map.of("error", e.getMessage()))
                     .build();
         }
+    }
+
+    private HikariDataSource unwrapHikariDataSource(DataSource targetDataSource) {
+        if (targetDataSource instanceof HikariDataSource hikariDataSource) {
+            return hikariDataSource;
+        }
+        try {
+            if (targetDataSource.isWrapperFor(HikariDataSource.class)) {
+                return targetDataSource.unwrap(HikariDataSource.class);
+            }
+        } catch (SQLException e) {
+            log.debug("无法解包 HikariDataSource: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private Map<String, Object> buildPoolDetails(HikariDataSource hikariDataSource) {
+        com.zaxxer.hikari.HikariPoolMXBean poolBean = hikariDataSource.getHikariPoolMXBean();
+        Map<String, Object> details = new HashMap<>();
+        details.put("active", poolBean.getActiveConnections());
+        details.put("idle", poolBean.getIdleConnections());
+        details.put("total", poolBean.getTotalConnections());
+        details.put("pending", poolBean.getThreadsAwaitingConnection());
+        details.put("maxPoolSize", hikariDataSource.getMaximumPoolSize());
+        details.put("connectionTimeout", hikariDataSource.getConnectionTimeout() + "ms");
+        return details;
+    }
+
+    static String determineDiskStatus(String currentStatus, double usedPercent) {
+        if (usedPercent > 95) {
+            return "DOWN";
+        }
+        if (usedPercent > 90 && !"DOWN".equals(currentStatus)) {
+            return "WARNING";
+        }
+        return currentStatus;
+    }
+
+    static String determineThreadStatus(int activeThreads, int deadlockedThreads) {
+        if (deadlockedThreads > 0) {
+            return "DOWN";
+        }
+        return activeThreads > 500 ? "WARNING" : "UP";
     }
 
     /**

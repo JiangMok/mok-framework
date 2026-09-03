@@ -34,34 +34,6 @@ public class UserUpdateDto {
     private String email;
 
     private String avatar;
-    private String password;
-    private String confirmPassword;
-    private String targetUserId;
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getConfirmPassword() {
-        return confirmPassword;
-    }
-
-    public void setConfirmPassword(String confirmPassword) {
-        this.confirmPassword = confirmPassword;
-    }
-
-    public String getTargetUserId() {
-        return targetUserId;
-    }
-
-    public void setTargetUserId(String targetUserId) {
-        this.targetUserId = targetUserId;
-    }
-
     private Integer status = 1;
 
     private String deptId;
@@ -79,8 +51,7 @@ public class UserUpdateDto {
      */
     public UserUpdateDto(String id, String nickname, String username, String phone,
                          String email, String avatar, Integer status, String deptId,
-                         List<String> roleIds, String password, String confirmPassword,
-                         String targetUserId) {
+                         List<String> roleIds) {
         this.id = id;
         this.nickname = nickname;
         this.username = username;
@@ -90,9 +61,6 @@ public class UserUpdateDto {
         this.status = status;
         this.deptId = deptId;
         this.roleIds = roleIds;
-        this.password = password;
-        this.confirmPassword = confirmPassword;
-        this.targetUserId = targetUserId;
     }
 
     // Getter 和 Setter 方法
@@ -200,15 +168,12 @@ public class UserUpdateDto {
                 Objects.equals(avatar, that.avatar) &&
                 Objects.equals(status, that.status) &&
                 Objects.equals(deptId, that.deptId) &&
-                Objects.equals(roleIds, that.roleIds)&&
-                Objects.equals(password, that.password)&&
-                Objects.equals(confirmPassword, that.confirmPassword)&&
-                Objects.equals(targetUserId, that.targetUserId);
+                Objects.equals(roleIds, that.roleIds);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, nickname, username, phone, email, avatar, status, deptId, roleIds, password, confirmPassword, targetUserId);
+        return Objects.hash(id, nickname, username, phone, email, avatar, status, deptId, roleIds);
     }
 
     /**
@@ -219,10 +184,6 @@ public class UserUpdateDto {
         private String nickname;
         private String username;
         private String phone;
-        private String password;
-        private String confirmPassword;
-        private String targetUserId;
-
         private String email;
         private String avatar;
         private Integer status = 1;
@@ -267,19 +228,6 @@ public class UserUpdateDto {
             this.deptId = deptId;
             return this;
         }
-        public Builder password(String password) {
-            this.password = password;
-            return this;
-        }
-        public Builder confirmPassword(String confirmPassword) {
-            this.confirmPassword = confirmPassword;
-            return this;
-        }
-         public Builder targetUserId(String targetUserId) {
-            this.targetUserId = targetUserId;
-            return this;
-        }
-
         public Builder roleIds(List<String> roleIds) {
             this.roleIds = roleIds;
             return this;
@@ -296,9 +244,6 @@ public class UserUpdateDto {
             dto.setStatus(status);
             dto.setDeptId(deptId);
             dto.setRoleIds(roleIds);
-            dto.setPassword(password);
-            dto.setConfirmPassword(confirmPassword);
-            dto.setTargetUserId(targetUserId);
             return dto;
         }
     }

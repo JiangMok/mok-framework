@@ -22,7 +22,7 @@ public class LoginResponse  {
     private String refreshToken;
 
     //令牌过期时间字段
-    //  作用 : 表示访问令牌在多长时间后过期(单位是 : 毫秒)
+    //  作用 : 表示访问令牌在多长时间后过期(单位是 : 秒)
     //  类型 : Long,因为时间值可能比较大
     private Long expiresIn;
 

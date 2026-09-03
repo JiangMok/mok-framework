@@ -13,7 +13,10 @@ import top.jiangmok.ratelimiter.annotation.RateLimit;
 import top.jiangmok.ratelimiter.enums.RateLimitScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.Valid;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/ai-system-prompt-config")
 @Tag(name = "AI系统提示词配置", description = "AI系统提示词配置管理")
 @SaCheckRole("ROLE_ADMIN")
+@Validated
 public class SysAiSystemPromptConfigController {
 
     private final SysAiSystemPromptConfigService service;
@@ -39,7 +43,10 @@ public class SysAiSystemPromptConfigController {
     @RateLimit(scope = RateLimitScope.USER, limit = 60)
     @GetMapping("/page")
     public R<Page<SysAiSystemPromptConfig>> page(
+            @Min(value = 1, message = "页码不能小于1")
             @RequestParam(defaultValue = "1") long pageNum,
+            @Min(value = 1, message = "每页大小不能小于1")
+            @Max(value = 1000, message = "每页大小不能超过1000")
             @RequestParam(defaultValue = "10") long pageSize) {
         return R.ok(service.page(pageNum, pageSize));
     }

@@ -6,13 +6,14 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mok.framework.base.mapper.UserMapper;
-import com.mok.framework.base.mapper.UserRoleMapper;
 import com.mok.framework.base.service.DepartmentService;
 import com.mok.framework.base.service.PermissionService;
 import com.mok.framework.base.service.RoleService;
 import com.mok.framework.base.service.UserService;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
+import com.mok.framework.common.security.PermissionCacheInvalidator;
+import com.mok.framework.common.security.SecuritySessionService;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.entity.PermissionEntity;
 import com.mok.framework.model.entity.RoleEntity;
@@ -20,6 +21,8 @@ import com.mok.framework.model.entity.UserEntity;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,14 +41,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
     private final RoleService roleService;
     private final DepartmentService departmentService;
     private final UserMapper userMapper;
+    private final PermissionCacheInvalidator permissionCacheInvalidator;
+    private final SecuritySessionService securitySessionService;
 
     public UserServiceImpl(PermissionService permissionService,
-                           UserRoleMapper userRoleMapper, RoleService roleService,
-                           DepartmentService departmentService, UserMapper userMapper) {
+                           RoleService roleService,
+                           DepartmentService departmentService,
+                           UserMapper userMapper,
+                           PermissionCacheInvalidator permissionCacheInvalidator,
+                           SecuritySessionService securitySessionService) {
         this.permissionService = permissionService;
         this.roleService = roleService;
         this.departmentService = departmentService;
         this.userMapper = userMapper;
+        this.permissionCacheInvalidator = permissionCacheInvalidator;
+        this.securitySessionService = securitySessionService;
     }
 
     /**
@@ -63,7 +73,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         //  Page<User> : 分页对象
         //  参数1: param.getPageNum() 当前页码
         //  参数2: param.getPageSize() 每页大小
-        Page<UserEntity> page = new Page<>(param.getPageNum(), param.getPageSize());
+        Page<UserEntity> page = param.toPageWithoutOrder();
         //创建 Lambda 查询条件包装器
         //  LambdaQueryWrapper<User>：支持Lambda表达式的查询条件包装器
         LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
@@ -119,6 +129,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
                 // 获取该部门的子树ID列表
                 List<String> subtreeIds = getSubtreeDeptIds(filterDeptId);
                 wrapper.in(UserEntity::getDeptId, subtreeIds);
+            } else {
+                // 无效或越权的部门筛选必须返回空集，不能退化为不筛选。
+                wrapper.eq(UserEntity::getId, "0");
             }
         }
         wrapper.orderByDesc(UserEntity::getCreateTime);
@@ -173,7 +186,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         }
 
         // 超级管理员可以查看所有用户
-        if ("admin".equals(currentUserEntity.getUsername())) {
+        if (isSuperAdmin(currentUserEntity)) {
             return true;
         }
 
@@ -204,6 +217,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         if (isSuperAdmin(currentUserEntity)) {
             //查询目标用户
             UserEntity targetUserEntity = getById(targetUserId);
+            if (targetUserEntity == null) {
+                return false;
+            }
             //目标用户是admin吗?
             if ("admin".equals(targetUserEntity.getUsername())) {
                 //只有当前登录用户是 admin 时才可以修改
@@ -224,7 +240,68 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer updateUserPwdById(UserEntity userEntity) {
-        return baseMapper.updateUserPwdById(userEntity);
+        Integer updated = baseMapper.updateUserPwdById(userEntity);
+        if (updated != null && updated > 0) {
+            securitySessionService.invalidateUserSessions(userEntity.getId());
+        }
+        return updated;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean createUserWithRoles(UserEntity userEntity, List<String> roleIds) {
+        boolean saved = save(userEntity);
+        if (!saved) {
+            return false;
+        }
+        if (roleIds != null && !roleIds.isEmpty()) {
+            roleService.assignUserRoles(userEntity.getId(), roleIds);
+        }
+        invalidateAroundCommit(() -> permissionCacheInvalidator.evictUserSecurityState(userEntity.getId()));
+        return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateUserWithRoles(UserEntity userEntity, List<String> roleIds) {
+        UserEntity persistedUser = userMapper.selectById(userEntity.getId());
+        boolean statusChanged = persistedUser != null
+                && !Objects.equals(persistedUser.getStatus(), userEntity.getStatus());
+        boolean updated = updateById(userEntity);
+        if (!updated) {
+            return false;
+        }
+        if (roleIds != null) {
+            roleService.assignUserRoles(userEntity.getId(), roleIds);
+        }
+        if (statusChanged) {
+            securitySessionService.invalidateUserSessions(userEntity.getId());
+            invalidateAroundCommit(() -> permissionCacheInvalidator.evictUserSecurityState(userEntity.getId()));
+        }
+        return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteUserWithRoles(UserEntity userEntity) {
+        roleService.assignUserRoles(userEntity.getId(), Collections.emptyList());
+        boolean deleted = removeById(userEntity);
+        if (deleted) {
+            securitySessionService.invalidateUserSessions(userEntity.getId());
+            invalidateAroundCommit(() -> permissionCacheInvalidator.evictUserSecurityState(userEntity.getId()));
+        }
+        return deleted;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateUserStatus(UserEntity userEntity) {
+        boolean updated = updateById(userEntity);
+        if (updated) {
+            securitySessionService.invalidateUserSessions(userEntity.getId());
+            invalidateAroundCommit(() -> permissionCacheInvalidator.evictUserSecurityState(userEntity.getId()));
+        }
+        return updated;
     }
 
     @Override
@@ -249,6 +326,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         List<RoleEntity> roleList = roleService.getRolesByUserId(user.getId());
         return roleList.stream()
                 .anyMatch(role -> "ROLE_ADMIN".equals(role.getRoleCode()));
+    }
+
+    private void invalidateAroundCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void beforeCommit(boolean readOnly) {
+                action.run();
+            }
+
+            @Override
+            public void afterCommit() {
+                try {
+                    action.run();
+                } catch (RuntimeException exception) {
+                    log.error("用户数据已提交，但提交后的缓存版本推进失败", exception);
+                }
+            }
+        });
     }
 
     /**

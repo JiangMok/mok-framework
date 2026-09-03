@@ -65,12 +65,14 @@ public class ResponseUtils {
      * @param code 业务码，可能为 null
      * @return 对应的 HTTP 状态码，默认为 500
      */
-    private static int getHttpStatus(Integer code) {
+    public static int getHttpStatus(Integer code) {
         if (code == null) {
             return 500;
         }
 
         switch (code) {
+            case 200:
+                return 200;  // 请求成功
             case 400:
                 return 400;  // 客户端请求语法错误
             case 401:

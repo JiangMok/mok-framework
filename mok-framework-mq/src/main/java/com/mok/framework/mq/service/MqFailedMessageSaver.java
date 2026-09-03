@@ -6,12 +6,18 @@ import com.mok.framework.model.enums.MessageType;
 import com.mok.framework.mq.util.MqFailedMessageBuilder;
 import com.mok.framework.mq.util.MessageFieldExtractor;
 import org.slf4j.Logger;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import com.rabbitmq.client.Channel;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import static com.mok.framework.common.constant.mq.SystemCheckMailMQConstant.SYSTEM_CHECK_MAIL_PARKING_QUEUE;
 
 @Component
 public class MqFailedMessageSaver {
@@ -19,14 +25,17 @@ public class MqFailedMessageSaver {
     private static final Logger log = LogUtils.getLogger(MqFailedMessageSaver.class);
 
     private final MqFailedMessageService mqFailedMessageService;
+    private final RabbitTemplate rabbitTemplate;
 
-    public MqFailedMessageSaver(MqFailedMessageService mqFailedMessageService){
+    public MqFailedMessageSaver(MqFailedMessageService mqFailedMessageService,
+                                RabbitTemplate rabbitTemplate){
         this.mqFailedMessageService=mqFailedMessageService;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     /**
      * 处理死信消息：构建记录 -> 提取业务字段 -> 持久化 -> 手动ACK
-     * 若保存失败，则 NACK 并丢弃消息（避免死循环）
+     * 若保存失败，则转入带 TTL 的停车队列，延迟后重新尝试，避免消息丢失和热循环。
      *
      * @param message      原始消息
      * @param channel      通道
@@ -38,9 +47,10 @@ public class MqFailedMessageSaver {
     public void saveAndAck(Message message, Channel channel, long deliveryTag,
                            MessageType messageType, String deadQueue,
                            MessageFieldExtractor extractor) {
+        MqFailedMessage record;
         try {
             // 1. 构建基础记录
-            MqFailedMessage record = MqFailedMessageBuilder.buildBaseRecord(message, messageType, deadQueue);
+            record = MqFailedMessageBuilder.buildBaseRecord(message, messageType, deadQueue);
 
             // 2. 提取业务特有字段
             if (extractor != null) {
@@ -53,13 +63,34 @@ public class MqFailedMessageSaver {
 
             // 3. 持久化
             mqFailedMessageService.saveMqFailedMessage(record);
-
-            // 4. 手动确认
-            channel.basicAck(deliveryTag, false);
         } catch (Exception e) {
-            log.error("========== 死信记录保存失败，消息将被丢弃: {}", e.getMessage(), e);
+            log.error("========== 死信记录保存失败，消息进入延迟停车队列: {}", e.getMessage(), e);
+            parkAndAck(message, channel, deliveryTag);
+            return;
+        }
+
+        try {
+            channel.basicAck(deliveryTag, false);
+        } catch (IOException exception) {
+            // 记录ID是确定性的，Broker 重投后不会重复插入。
+            throw new AmqpException("死信记录已保存但ACK失败", exception);
+        }
+    }
+
+    private void parkAndAck(Message message, Channel channel, long deliveryTag) {
+        try {
+            CorrelationData correlationData = new CorrelationData(
+                    "parking-" + UUID.randomUUID().toString().replace("-", ""));
+            rabbitTemplate.send("", SYSTEM_CHECK_MAIL_PARKING_QUEUE, message, correlationData);
+            CorrelationData.Confirm confirm = correlationData.getFuture().get(10, TimeUnit.SECONDS);
+            if (!confirm.isAck() || correlationData.getReturned() != null) {
+                throw new AmqpException("死信消息进入停车队列失败");
+            }
+            channel.basicAck(deliveryTag, false);
+        } catch (Exception parkingException) {
+            log.error("========== 消息进入停车队列失败，保留原消息重试", parkingException);
             try {
-                channel.basicNack(deliveryTag, false, false);
+                channel.basicNack(deliveryTag, false, true);
             } catch (IOException ex) {
                 log.error("========== 拒绝消息失败", ex);
             }

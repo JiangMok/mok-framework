@@ -13,6 +13,7 @@ import com.mok.framework.base.service.PermissionService;
 import com.mok.framework.common.BusinessException;
 import com.mok.framework.common.PageParam;
 import com.mok.framework.common.PageResult;
+import com.mok.framework.common.security.PermissionCacheInvalidator;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.dto.PermissionDTO;
 import com.mok.framework.model.entity.PermissionEntity;
@@ -22,6 +23,8 @@ import org.slf4j.Logger;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -42,18 +45,21 @@ public class PermissionServiceImpl
     private final PermissionMapper permissionMapper;
     private final RoleMapper roleMapper;
     private final RolePermissionMapper rolePermissionMapper;
+    private final PermissionCacheInvalidator permissionCacheInvalidator;
 
     public PermissionServiceImpl(PermissionMapper permissionMapper,
                                  RoleMapper roleMapper,
-                                 RolePermissionMapper rolePermissionMapper) {
+                                 RolePermissionMapper rolePermissionMapper,
+                                 PermissionCacheInvalidator permissionCacheInvalidator) {
         this.permissionMapper = permissionMapper;
         this.roleMapper = roleMapper;
         this.rolePermissionMapper = rolePermissionMapper;
+        this.permissionCacheInvalidator = permissionCacheInvalidator;
     }
 
     @Override
     public PageResult<PermissionEntity> getPageList(PageParam param) {
-        Page<PermissionEntity> page = new Page<>(param.getPageNum(), param.getPageSize());
+        Page<PermissionEntity> page = param.toPageWithoutOrder();
         LambdaQueryWrapper<PermissionEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PermissionEntity::getIsDeleted, 0);
         if (param.getParams().get("type") != null) {
@@ -65,8 +71,8 @@ public class PermissionServiceImpl
         }
         //根据权限名搜索或者权限编码查询
         if (StringUtils.hasText(param.getKeyword())) {
-            wrapper.like(PermissionEntity::getPermissionName, param.getKeyword())
-                    .or().like(PermissionEntity::getPermissionCode, param.getKeyword());
+            wrapper.and(w -> w.like(PermissionEntity::getPermissionName, param.getKeyword())
+                    .or().like(PermissionEntity::getPermissionCode, param.getKeyword()));
         }
         if (param.getOrderBy() != null) {
             if ("asc".equalsIgnoreCase(param.getOrder())) {
@@ -195,8 +201,14 @@ public class PermissionServiceImpl
         PermissionEntity permissionEntityDelete = new PermissionEntity();
         permissionEntityDelete.setId(permissionId);
         permissionEntityDelete.setIsDeleted(1);
+        rolePermissionMapper.delete(new LambdaQueryWrapper<RolePermissionEntity>()
+                .eq(RolePermissionEntity::getPermissionId, permissionId));
         //逻辑删除
-        return removeById(permissionEntityDelete);
+        boolean deleted = removeById(permissionEntityDelete);
+        if (deleted) {
+            evictAllPermissionsAroundCommit();
+        }
+        return deleted;
     }
 
     @Override
@@ -232,20 +244,15 @@ public class PermissionServiceImpl
         //查询当前用户的角色
         String userId = StpUtil.getLoginId().toString();
         List<RoleEntity> roleEntityList = roleMapper.selectRolesByUserId(userId);
-        //创建角色权限关联的list,方便后续批量插入
-        List<RolePermissionEntity> rolePermissionEntityList = new ArrayList<>();
-        //判断是否是超级管理员角色
-        boolean isAdminRole = roleEntityList.stream()
-                .anyMatch(role -> "ROLE_ADMIN".equals(role.getRoleCode()));
-        if (!isAdminRole) {
-            RolePermissionEntity rolePermissionEntity = new RolePermissionEntity();
-            rolePermissionEntity.setId(IdUtil.simpleUUID());
-            rolePermissionEntity.setPermissionId(permissionEntity.getId());
-            //超级管理员橘色的的ID = 1
-            rolePermissionEntity.setRoleId("1");
-            rolePermissionEntityList.add(rolePermissionEntity);
+        // 新权限只自动授予管理员角色，避免操作者同时拥有的普通角色被意外扩权。
+        List<RoleEntity> adminRoles = roleEntityList.stream()
+                .filter(role -> "ROLE_ADMIN".equals(role.getRoleCode()))
+                .toList();
+        if (adminRoles.isEmpty()) {
+            throw new BusinessException("当前用户不具备管理员角色");
         }
-        for (RoleEntity roleEntity : roleEntityList) {
+        List<RolePermissionEntity> rolePermissionEntityList = new ArrayList<>();
+        for (RoleEntity roleEntity : adminRoles) {
             RolePermissionEntity rolePermissionEntity = new RolePermissionEntity();
             rolePermissionEntity.setId(IdUtil.simpleUUID());
             rolePermissionEntity.setRoleId(roleEntity.getId());
@@ -262,7 +269,7 @@ public class PermissionServiceImpl
                 rolePermissionMapper.insert(rolePermissionEntity);
             }
         }
-        //清空redis里缓存的权限
+        evictAllPermissionsAroundCommit();
         return permissionEntity.getId();
     }
 
@@ -274,17 +281,20 @@ public class PermissionServiceImpl
             throw new BusinessException("权限不存在");
         }
         // 检查权限编码是否重复（排除自己）
-        Long count = lambdaQuery()
+        Long count = permissionMapper.selectCount(new LambdaQueryWrapper<PermissionEntity>()
                 .eq(PermissionEntity::getPermissionCode, permissionDTO.getPermissionCode())
                 .ne(PermissionEntity::getId, permissionDTO.getId())
-                .eq(PermissionEntity::getIsDeleted, 0)
-                .count();
+                .eq(PermissionEntity::getIsDeleted, 0));
 
         if (count > 0) {
             throw new BusinessException("权限编码已存在");
         }
         BeanUtils.copyProperties(permissionDTO, permissionEntity);
-        return updateById(permissionEntity);
+        boolean updated = updateById(permissionEntity);
+        if (updated) {
+            evictAllPermissionsAroundCommit();
+        }
+        return updated;
     }
 
     @Override
@@ -437,6 +447,29 @@ public class PermissionServiceImpl
         }
 
         return result;
+    }
+
+    private void evictAllPermissionsAroundCommit() {
+        Runnable action = permissionCacheInvalidator::evictAllPermissions;
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void beforeCommit(boolean readOnly) {
+                action.run();
+            }
+
+            @Override
+            public void afterCommit() {
+                try {
+                    action.run();
+                } catch (RuntimeException exception) {
+                    log.error("权限数据已提交，但提交后的缓存版本推进失败", exception);
+                }
+            }
+        });
     }
 }
 

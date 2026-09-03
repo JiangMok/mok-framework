@@ -117,22 +117,18 @@ public class CaptchaMOKServiceImpl implements CaptchaService {
     @Override
     public boolean validateCaptcha(String key, String code) {
         //检查参数是否为空
-        if (key == null || code == null) {
+        if (key == null || key.isBlank() || code == null || code.isBlank()) {
             return false;
         }
 
-        //从 redis 获取存储的验证码
-        String storedCode = redisTemplate.opsForValue().get(key);
+        // 原子读取并删除，确保同一个验证码并发情况下也只能使用一次
+        String storedCode = CaptchaRedisSupport.getAndDelete(redisTemplate, key);
 
         //检查验证码是否存在
         if (storedCode == null) {
             //验证码不存在或者已过期
             return false;
         }
-
-        //验证后删除验证码
-        //  防止重复使用,提高安全性
-        redisTemplate.delete(key);
 
         //根据验证码类型进行验证
         if ("math".equals(captchaConfig.getType())) {
@@ -149,7 +145,7 @@ public class CaptchaMOKServiceImpl implements CaptchaService {
 
         //字符验证码验证
         //  不区分大小写,因为图片中的字母可能大小写混合
-        return storedCode.equalsIgnoreCase(code);
+        return storedCode.equalsIgnoreCase(code.trim());
     }
 
     /**

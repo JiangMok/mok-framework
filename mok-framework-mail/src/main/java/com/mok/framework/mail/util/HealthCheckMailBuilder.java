@@ -35,6 +35,7 @@ public class HealthCheckMailBuilder {
         String timestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now());
         String appName = String.valueOf(health.getOrDefault("application", "MOK-Framework"));
         String version = String.valueOf(health.getOrDefault("version", "--"));
+        String instanceId = String.valueOf(health.getOrDefault("instanceId", "--"));
 
         // Banner 三色：UP=绿, WARNING=黄, DOWN=红
         String bannerBg, bannerIcon, bannerTitle;
@@ -68,6 +69,7 @@ public class HealthCheckMailBuilder {
         sb.append("<tr><td style=\"padding:20px 28px 8px;\">");
         sb.append("<p style=\"margin:0;font-size:14px;color:#333;\"><strong>检测时间：</strong>").append(timestamp).append("</p>");
         sb.append("<p style=\"margin:4px 0 0;font-size:14px;color:#333;\"><strong>整体状态：</strong><span style=\"color:").append(bannerBg).append(";font-weight:700;\">").append(overallStatus).append("</span></p>");
+        sb.append("<p style=\"margin:4px 0 0;font-size:14px;color:#333;\"><strong>实例：</strong>").append(instanceId).append("</p>");
         sb.append("</td></tr>");
 
         // ==== 组件表格 ====

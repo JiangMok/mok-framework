@@ -1,27 +1,22 @@
 package com.mok.framework.ai.service;
 
-import com.mok.framework.model.enums.AiAnalysisRequestType;
-
-import java.io.Closeable;
 import java.util.function.Consumer;
 
 /**
- * 大模型流式分析服务，返回的 Closeable 用于中断请求
+ * 大模型流式分析服务。
+ * 每次请求返回独立的句柄，避免并发请求共享同一个取消状态。
  */
-public interface AIService extends Closeable {
-    /**
-     * 执行流式分析
-     *
-     * @param prompt   用户提示词
-     * @param consumer 每段文本回调
-     */
-    void streamAnalysis(String prompt,
-                        String systemPrompt,
-                        Consumer<String> consumer);
+public interface AIService {
 
     /**
-     * 关闭连接（中断当前的流）
+     * 创建一次流式分析调用。
+     *
+     * @param prompt       用户提示词
+     * @param systemPrompt 系统提示词，为空时使用配置默认值
+     * @param consumer     每段文本回调
+     * @return 当前请求独享的流式调用句柄
      */
-    @Override
-    void close();
+    AIStreamHandle createStream(String prompt,
+                                String systemPrompt,
+                                Consumer<String> consumer);
 }

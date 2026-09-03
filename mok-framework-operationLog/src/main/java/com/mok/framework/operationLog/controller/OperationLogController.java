@@ -4,12 +4,15 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.mok.framework.common.PageResult;
 import com.mok.framework.common.R;
+import com.mok.framework.common.BusinessException;
+import com.mok.framework.common.constant.ResponseCode;
 import com.mok.framework.operationLog.dto.OperationLogQueryRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,6 +42,11 @@ import java.time.LocalDateTime;
 @RequestMapping("/operation-log")
 @Tag(name = "操作日志", description = "操作日志查询与清理接口")
 @SaCheckRole("ROLE_ADMIN")
+@ConditionalOnProperty(
+        prefix = "mok.operation-log",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class OperationLogController {
 
     private final OperationLogService operationLogService;
@@ -78,7 +86,11 @@ public class OperationLogController {
     @GetMapping("/{id}")
     @SaCheckPermission("system:log:query")
     public R<OperationLogEntity> detail(@PathVariable String id) {
-        return R.ok(operationLogService.findById(id));
+        OperationLogEntity operationLog = operationLogService.findById(id);
+        if (operationLog == null) {
+            throw new BusinessException(ResponseCode.NOT_FOUND, "操作日志不存在");
+        }
+        return R.ok(operationLog);
     }
 
     @Operation(summary = "清理历史日志")
@@ -91,6 +103,9 @@ public class OperationLogController {
             @Parameter(description = "清理指定日期之前的日志，格式：yyyy/MM/dd HH:mm:ss")
             @RequestParam("beforeDate")
             @DateTimeFormat(pattern = "yyyy/MM/dd HH:mm:ss") LocalDateTime beforeDate) {
+        if (beforeDate.isAfter(LocalDateTime.now())) {
+            throw new BusinessException(ResponseCode.BAD_REQUEST, "清理时间不能晚于当前时间");
+        }
         int deletedCount = operationLogService.cleanLogsBefore(beforeDate);
         return R.ok(String.format("已清理%d条日志", deletedCount));
     }
@@ -101,6 +116,9 @@ public class OperationLogController {
     @DeleteMapping("/delete/{id}")
     @SaCheckPermission("system:log:delete")
     public R<String> deleteById(@PathVariable String id) {
+        if (!operationLogService.checkExistsById(id)) {
+            throw new BusinessException(ResponseCode.NOT_FOUND, "操作日志不存在");
+        }
         operationLogService.deleteById(id);
         return R.ok("删除成功");
     }

@@ -15,7 +15,7 @@ public class MailLog {
     private String subject;
     private String mailType;          // 邮件类型：ALERT / NOTIFICATION / SYSTEM_CHECK ...
     private String content;
-    private String sendStatus;        // SUCCESS / FAILED
+    private String sendStatus;        // SENDING / SUCCESS / FAILED
     private String failReason;
     private LocalDateTime sendTime;
     private LocalDateTime createTime;

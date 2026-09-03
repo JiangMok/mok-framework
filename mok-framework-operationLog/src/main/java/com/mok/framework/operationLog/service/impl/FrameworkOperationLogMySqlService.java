@@ -1,7 +1,7 @@
 package com.mok.framework.operationLog.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 import top.jiangmok.operationlog.config.OperationLogProperties;
 import top.jiangmok.operationlog.service.impl.OperationLogMySqlServiceImpl;
@@ -13,13 +13,12 @@ import top.jiangmok.operationlog.service.impl.OperationLogMySqlServiceImpl;
  */
 @Service
 @DS("operationLog")
-@ConditionalOnProperty(
-        name = "mok.operation-log.save-location",
-        havingValue = "mysql")
+@ConditionalOnExpression(
+        "'${mok.operation-log.enabled:true}' == 'true' " +
+        "and '${mok.operation-log.save-location:file}' == 'mysql'")
 public class FrameworkOperationLogMySqlService extends OperationLogMySqlServiceImpl {
 
     public FrameworkOperationLogMySqlService(OperationLogProperties properties) {
         super(properties);
     }
 }
-

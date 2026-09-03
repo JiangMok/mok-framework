@@ -1,5 +1,9 @@
 package com.mok.framework.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -19,20 +23,28 @@ public class MailSenderDTO {
     private String host;
 
     @NotNull(message = "端口不能为空")
+    @Min(value = 1, message = "端口不能小于1")
+    @Max(value = 65535, message = "端口不能大于65535")
     private Integer port;
 
     @NotNull(message = "SSL 启用状态不能为空")
+    @Min(value = 0, message = "SSL 启用状态不正确")
+    @Max(value = 1, message = "SSL 启用状态不正确")
     private Integer sslEnable;
 
     @NotBlank(message = "发件人地址不能为空")
+    @Email(message = "发件人地址格式不正确")
     private String fromAddress;
 
     @NotBlank(message = "用户名不能为空")
     private String username;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @NotNull(message = "状态不能为空")
+    @Min(value = 0, message = "状态值不正确")
+    @Max(value = 1, message = "状态值不正确")
     private Integer status = 1;
 
     public MailSenderDTO() {

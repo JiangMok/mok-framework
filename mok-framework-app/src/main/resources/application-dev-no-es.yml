@@ -4,8 +4,9 @@ server:
     context-path: /api
   tomcat:
     uri-encoding: UTF-8
-    max-threads: 200
-    min-spare-threads: 10
+    threads:
+      max: 200
+      min-spare: 10
 
 app:
   cors:
@@ -32,9 +33,6 @@ spring:
   elasticsearch:
     repositories:
       enabled: false   # 禁用 ES 仓库扫描
-  #      uris: http://192.168.5.22:9200
-  #      username: elastic
-  #      password: 123456
 
   # ================================================================
   #  [3] 数据源配置 — 动态多数据源
@@ -205,8 +203,12 @@ mok:
   # AI模块
   ai:
     provider: deepseek        # 切换 openai 即可
-    api-key: ${mok.ai.api-key}
+    api-key: "${MOK_AI_API_KEY:${spring.ai.openai.api-key}}"
+    base-url: "${MOK_AI_BASE_URL:https://api.deepseek.com}"
     model: deepseek-v4-flash
+    connect-timeout-seconds: 30
+    read-timeout-seconds: 120
+    sse-timeout-millis: 300000
     system-prompt: "
     你是一个专业的系统日志分析助手，只负责根据用户提供的日志信息，分析其中存在的错误或异常原因。严格遵守以下规则：
     1. 只输出错误或异常的分析结论，不输出任何建议、解决方案、后续步骤或预防措施。
@@ -215,6 +217,10 @@ mok:
     4. 仅基于日志内容本身进行分析，不做超出日志范围的推断。
     5. 回答使用Markdown格式，层级清晰。
     "
+  # 邮件投递占位租约；实例崩溃后超过该时间允许其他实例接管。
+  mail:
+    delivery:
+      sending-lease-seconds: 300
   # 限流 Starter
   rate-limiter:
     enabled: true
@@ -231,12 +237,17 @@ mok:
     monitor-enabled: true
   start:
     systemStartCheckMail: false
+  task:
+    health-check:
+      alert-cooldown-seconds: 1800
   operation-log:
     enabled: true
     save-location: mysql           # 使用独立 operationLog 数据源
     async-strategy: rabbitmq
     record-get: true
     max-content-length: 2000
+    business-exceptions:
+      - com.mok.framework.common.BusinessException
   #  mok-framework 验证码配置
   captcha:
     width: 120
@@ -250,7 +261,7 @@ mok:
 # ================================================================
 file:
   storage:
-    base-path: ${user.home}/mok-uploads
+    base-path: ${FILE_STORAGE_BASE_PATH:./uploads}
     url-prefix: /api/uploads
     base-url: http://localhost:8080
     allowed-types:

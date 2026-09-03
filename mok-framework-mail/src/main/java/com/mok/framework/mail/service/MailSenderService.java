@@ -18,7 +18,7 @@ public interface MailSenderService {
     MailSender getConfig();
 
     /**
-     * 更新发件箱配置，同时热刷新 MailAccount
+     * 更新发件箱配置；后续发送会从数据库读取最新配置
      */
     void updateConfig(MailSenderDTO dto);
 

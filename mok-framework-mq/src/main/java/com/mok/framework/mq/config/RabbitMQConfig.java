@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.boot.autoconfigure.amqp.RabbitTemplateConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,8 +31,11 @@ public class RabbitMQConfig {
      * RabbitTemplate是发送消息的主要工具类
      */
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
+                                         RabbitTemplateConfigurer configurer) {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate();
+        // 应用 spring.rabbitmq.template 下的 mandatory、retry 等统一配置
+        configurer.configure(rabbitTemplate, connectionFactory);
 
         // 设置JSON消息转换器
         rabbitTemplate.setMessageConverter(jsonMessageConverter());
@@ -39,11 +43,17 @@ public class RabbitMQConfig {
         // 设置消息发送确认回调（可选）
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
             if (ack) {
-                log.info("========== 消息发送成功");
+                log.debug("========== 消息发送成功: correlationId={}",
+                        correlationData != null ? correlationData.getId() : null);
             } else {
-                log.info("========== 消息发送失败:{}", cause);
+                log.error("========== 消息发送失败: correlationId={}, cause={}",
+                        correlationData != null ? correlationData.getId() : null, cause);
             }
         });
+
+        rabbitTemplate.setReturnsCallback(returned ->
+                log.error("========== 消息路由失败: exchange={}, routingKey={}, replyText={}",
+                        returned.getExchange(), returned.getRoutingKey(), returned.getReplyText()));
 
         return rabbitTemplate;
     }

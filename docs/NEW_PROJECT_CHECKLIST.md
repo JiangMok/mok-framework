@@ -64,22 +64,14 @@ mok:
 | `mok-framework-operationLog` | 不需要操作日志后台管理接口；Starter 仍可单独保留 |
 | `mok-framework-test` | 正式业务项目通常删除示例接口模块 |
 
-## 5. 删除演示业务
-
-前端 `order` 下的订单、商品、优惠券、发货和秒杀页面属于演示业务。新项目不需要时同时删除：
-
-- `src/views/order/`
-- 对应 `src/api/modules/`
-- 对应 `src/types/`
-- 数据库菜单和权限记录
-
-## 6. 交付门禁
+## 5. 交付门禁
 
 后端：
 
 ```powershell
 & 'D:\Develop\Softwares\Maven\apache-maven-3.9.12\bin\mvn.cmd' `
   -s 'D:\Develop\Softwares\Maven\apache-maven-3.9.12\conf\settings.xml' `
+  '-Dmaven.repo.local=D:\Develop\Softwares\Maven\repository' `
   clean test
 ```
 
@@ -91,9 +83,8 @@ npm run build
 
 前端构建会依次执行 TypeScript 检查、ESLint 和 Vite 生产构建。
 
-## 7. 版本维护原则
+## 6. 版本维护原则
 
 - 脚手架升级主要服务后续新项目，不强制旧项目持续合并模板。
 - 多项目共同需要的修复优先沉淀到独立 Starter 或内部依赖。
 - 每次创建项目记录使用的脚手架提交和 Starter 版本。
-

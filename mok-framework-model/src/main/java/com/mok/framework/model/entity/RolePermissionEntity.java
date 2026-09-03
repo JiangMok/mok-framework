@@ -12,7 +12,7 @@ import java.util.Objects;
  **/
 @TableName("sys_role_permission")
 public class RolePermissionEntity  {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.INPUT)
     private String id;
 
     @TableField("role_id")

@@ -12,8 +12,9 @@ server:
     context-path: /api
   tomcat:
     uri-encoding: UTF-8
-    max-threads: 200
-    min-spare-threads: 10
+    threads:
+      max: 200
+      min-spare: 10
 
 app:
   cors:
@@ -58,9 +59,9 @@ spring:
   #   Elasticsearch 配置
   # ================================================================
   elasticsearch:
-    uris: ${spring.elasticsearch.uri}               # ES 集群地址，来自环境变量
-    username: ${spring.elasticsearch.username}      # ES 用户名
-    password: 123456                                # ES 密码（开发环境固定值）
+    uris: "${ELASTICSEARCH_URIS:${spring.elasticsearch.uri:http://127.0.0.1:9200}}"
+    username: "${ELASTICSEARCH_USERNAME:${spring.elasticsearch.username:}}"
+    password: "${ELASTICSEARCH_PASSWORD:${spring.elasticsearch.password:}}"
   # ================================================================
   #  Redis
   # ================================================================
@@ -228,9 +229,17 @@ mok:
   #  mok-framework ai配置
   ai:
     provider: deepseek                             # AI 服务提供方（deepseek / openai）
-    api-key: ${mok.ai.api-key}                     # AI 服务 API 密钥
+    api-key: "${MOK_AI_API_KEY:${spring.ai.openai.api-key}}"  # AI 服务 API 密钥
+    base-url: "${MOK_AI_BASE_URL:https://api.deepseek.com}"
     model: deepseek-v4-flash                       # 使用的模型名称
+    connect-timeout-seconds: 30
+    read-timeout-seconds: 120
+    sse-timeout-millis: 300000
     system-prompt: "你是一个专业的系统日志分析助手，请根据用户提供的日志信息，分析错误原因并给出可行的解决方案。回答请使用Markdown格式，结构清晰。"  # AI 系统提示词
+  # 邮件投递占位租约；实例崩溃后超过该时间允许其他实例接管。
+  mail:
+    delivery:
+      sending-lease-seconds: 300
   #  MOK 限流 Starter 配置
   rate-limiter:
     enabled: true
@@ -248,6 +257,9 @@ mok:
   #  mok-framework 系统启动相关配置
   start:
     systemStartCheckMail: false
+  task:
+    health-check:
+      alert-cooldown-seconds: 1800
   #  mok-framework 操作日志配置
   operation-log:
     enabled: true
@@ -255,6 +267,8 @@ mok:
     async-strategy: rabbitmq
     record-get: true
     max-content-length: 2000
+    business-exceptions:
+      - com.mok.framework.common.BusinessException
   #  mok-framework 验证码配置
   captcha:
     width: 120
@@ -268,7 +282,7 @@ mok:
 # ================================================================
 file:
   storage:
-    base-path: ${user.home}/mok-uploads
+    base-path: ${FILE_STORAGE_BASE_PATH:./uploads}
     url-prefix: /api/uploads
     base-url: http://localhost:8080
     allowed-types:

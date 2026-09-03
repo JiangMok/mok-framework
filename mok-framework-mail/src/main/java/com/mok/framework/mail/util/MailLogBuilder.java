@@ -2,7 +2,6 @@ package com.mok.framework.mail.util;
 
 import cn.hutool.core.util.IdUtil;
 import com.mok.framework.model.enums.MailType;
-import com.mok.framework.model.dto.SystemCheckMailMessage;
 import com.mok.framework.model.entity.MailLog;
 
 import java.time.LocalDateTime;
@@ -32,7 +31,9 @@ public class MailLogBuilder {
         logEntity.setSubject(subject);
         logEntity.setContent(content);
         logEntity.setMailType(mailType.getCode());
-        logEntity.setSendTime(LocalDateTime.now());
+        // DATETIME 默认精度为秒；该时间同时作为本次投递占位的乐观令牌。
+        LocalDateTime claimTime = LocalDateTime.now().withNano(0);
+        logEntity.setSendTime(claimTime);
         return logEntity;
     }
 }

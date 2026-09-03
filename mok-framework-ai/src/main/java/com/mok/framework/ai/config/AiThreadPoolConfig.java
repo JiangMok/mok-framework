@@ -25,8 +25,8 @@ public class AiThreadPoolConfig {
         executor.setQueueCapacity(50);
         executor.setKeepAliveSeconds(120);
         executor.setThreadNamePrefix("ai-analysis-");
-        // 队列满时由调用者线程执行，防止任务丢失
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        // 队列满时快速失败，避免耗时 AI 请求占用 Web 请求线程
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
         // 应用关闭时等待任务完成
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(30);

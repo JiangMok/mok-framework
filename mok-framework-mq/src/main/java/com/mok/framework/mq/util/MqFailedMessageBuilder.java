@@ -1,12 +1,15 @@
 package com.mok.framework.mq.util;
 
-import cn.hutool.core.util.IdUtil;
 import com.mok.framework.model.entity.MqFailedMessage;
 import com.mok.framework.model.enums.MessageType;
 import org.springframework.amqp.core.Message;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+
+import static com.mok.framework.common.constant.mq.SystemCheckMailMQConstant.SYSTEM_CHECK_MAIL_MAX_RETRY;
 
 /**
  * MQ 死信失败记录构建工具
@@ -23,7 +26,6 @@ public class MqFailedMessageBuilder {
      */
     public static MqFailedMessage buildBaseRecord(Message message, MessageType messageType) {
         MqFailedMessage record = new MqFailedMessage();
-        record.setId(IdUtil.simpleUUID());
         
         // 1. 消息类型
         record.setMessageType(messageType.getCode());
@@ -31,15 +33,24 @@ public class MqFailedMessageBuilder {
         // 2. 消息体（字符串）
         String body = new String(message.getBody(), java.nio.charset.StandardCharsets.UTF_8);
         record.setMessageBody(body);
+        String idSource = messageType.getCode() + '|' + body + '|'
+                + message.getMessageProperties().getReceivedExchange() + '|'
+                + message.getMessageProperties().getReceivedRoutingKey();
+        record.setId(UUID.nameUUIDFromBytes(idSource.getBytes(StandardCharsets.UTF_8))
+                .toString().replace("-", ""));
         
         // 3. 队列与交换机信息
-        record.setOriginalQueue(message.getMessageProperties().getConsumerQueue());
+        Map<String, Object> headers = message.getMessageProperties().getHeaders();
+        Map<?, ?> originalDeath = getOldestDeath(headers.get("x-death"));
+        Object originalQueue = originalDeath != null ? originalDeath.get("queue") : null;
+        record.setOriginalQueue(originalQueue != null
+                ? originalQueue.toString()
+                : message.getMessageProperties().getConsumerQueue());
         // 死信队列名通常从消费者注解可知，此处留空由调用方设置或保持 null
         record.setDlxExchange(message.getMessageProperties().getReceivedExchange());
         record.setDlxRoutingKey(message.getMessageProperties().getReceivedRoutingKey());
         
         // 4. 死信原因与 x-death 头
-        Map<String, Object> headers = message.getMessageProperties().getHeaders();
         String reason = Optional.ofNullable(headers.get("x-death")).orElse("未知原因").toString();
         record.setFailReason(reason);
         if (headers.get("x-death") != null) {
@@ -47,8 +58,12 @@ public class MqFailedMessageBuilder {
         }
         
         // 5. 重试与状态默认值
-        record.setRetryCount(0);
-        record.setMaxRetry(3);
+        Object configuredAttempts = headers.get("x-consumer-max-attempts");
+        int maxRetry = configuredAttempts instanceof Number number
+                ? Math.max(0, number.intValue() - 1)
+                : SYSTEM_CHECK_MAIL_MAX_RETRY;
+        record.setRetryCount(maxRetry);
+        record.setMaxRetry(maxRetry);
         record.setStatus("PENDING");
         
         // 6. 时间
@@ -61,6 +76,18 @@ public class MqFailedMessageBuilder {
         MqFailedMessage record = buildBaseRecord(message, messageType);
         record.setDeadQueue(deadQueue);
         return record;
+    }
+
+    private static Map<?, ?> getOldestDeath(Object xDeathHeader) {
+        if (xDeathHeader instanceof java.util.List<?> deaths) {
+            // RabbitMQ 按最近一次死亡排在最前；停车队列过期后，最末项才是原业务队列。
+            for (int index = deaths.size() - 1; index >= 0; index--) {
+                if (deaths.get(index) instanceof Map<?, ?> death) {
+                    return death;
+                }
+            }
+        }
+        return null;
     }
 
 }

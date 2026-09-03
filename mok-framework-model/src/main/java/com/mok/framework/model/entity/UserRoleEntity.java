@@ -16,7 +16,7 @@ public class UserRoleEntity implements Serializable {
     // 添加 serialVersionUID
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.INPUT)
     private String id;
 
     @TableField("user_id")

@@ -193,7 +193,15 @@ mok:
   ai:
     provider: ${PROD_AI_PROVIDER:deepseek}
     api-key: ${PROD_AI_API_KEY}     # 与 spring.ai.openai.api-key 保持一致或独立
+    base-url: "${PROD_AI_BASE_URL:https://api.deepseek.com}"
     model: ${PROD_AI_MODEL:deepseek-v4-flash}
+    connect-timeout-seconds: ${PROD_AI_CONNECT_TIMEOUT_SECONDS:30}
+    read-timeout-seconds: ${PROD_AI_READ_TIMEOUT_SECONDS:120}
+    sse-timeout-millis: ${PROD_AI_SSE_TIMEOUT_MILLIS:300000}
+  # 邮件投递占位租约；应大于单次 SMTP 最大允许耗时。
+  mail:
+    delivery:
+      sending-lease-seconds: ${MAIL_SENDING_LEASE_SECONDS:300}
   #  MOK 限流 Starter 配置
   rate-limiter:
     enabled: true
@@ -211,13 +219,18 @@ mok:
   #  mok-framework 系统启动相关配置
   start:
     systemStartCheckMail: true
+  task:
+    health-check:
+      alert-cooldown-seconds: ${HEALTH_ALERT_COOLDOWN_SECONDS:1800}
   #  mok-framework 操作日志配置
   operation-log:
     enabled: true
-    save-location: es
+    save-location: mysql
     async-strategy: rabbitmq
     record-get: false                 # 生产环境通常不记录 GET 请求，减少日志量
     max-content-length: 500           # 限制内容长度，节省存储
+    business-exceptions:
+      - com.mok.framework.common.BusinessException
   #  mok-framework 验证码配置
   captcha:
     width: 120
@@ -235,8 +248,9 @@ server:
     context-path: /api
   tomcat:
     uri-encoding: UTF-8
-    max-threads: 500                # 生产环境提升线程数
-    min-spare-threads: 50
+    threads:
+      max: 500                     # 生产环境提升线程数
+      min-spare: 50
 
 # ================================================================
 #  文件存储配置

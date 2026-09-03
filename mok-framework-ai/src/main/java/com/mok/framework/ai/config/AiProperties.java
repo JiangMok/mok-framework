@@ -25,6 +25,21 @@ public class AiProperties {
      * 模型名称
      */
     private String model = "deepseek-chat";
+
+    /**
+     * 建立连接超时时间（秒）
+     */
+    private int connectTimeoutSeconds = 30;
+
+    /**
+     * 流式响应连续无数据时的读取超时时间（秒）
+     */
+    private int readTimeoutSeconds = 120;
+
+    /**
+     * 单次 SSE 请求最长存活时间（毫秒）
+     */
+    private long sseTimeoutMillis = 300_000L;
     /**
      * 系统提示词（可预置）
      */
@@ -40,19 +55,36 @@ public class AiProperties {
 
     @Override
     public String toString() {
-        return "AiProperties{" + "provider='" + provider + '\'' + ", apiKey='" + apiKey + '\'' + ", baseUrl='" + baseUrl + '\'' + ", model='" + model + '\'' + ", systemPrompt='" + systemPrompt + '\'' + '}';
+        return "AiProperties{" +
+                "provider='" + provider + '\'' +
+                ", apiKey='[PROTECTED]'" +
+                ", baseUrl='" + baseUrl + '\'' +
+                ", model='" + model + '\'' +
+                ", connectTimeoutSeconds=" + connectTimeoutSeconds +
+                ", readTimeoutSeconds=" + readTimeoutSeconds +
+                ", sseTimeoutMillis=" + sseTimeoutMillis +
+                ", systemPrompt='" + systemPrompt + '\'' +
+                '}';
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         AiProperties that = (AiProperties) o;
-        return Objects.equals(provider, that.provider) && Objects.equals(apiKey, that.apiKey) && Objects.equals(baseUrl, that.baseUrl) && Objects.equals(model, that.model) && Objects.equals(systemPrompt, that.systemPrompt);
+        return connectTimeoutSeconds == that.connectTimeoutSeconds &&
+                readTimeoutSeconds == that.readTimeoutSeconds &&
+                sseTimeoutMillis == that.sseTimeoutMillis &&
+                Objects.equals(provider, that.provider) &&
+                Objects.equals(apiKey, that.apiKey) &&
+                Objects.equals(baseUrl, that.baseUrl) &&
+                Objects.equals(model, that.model) &&
+                Objects.equals(systemPrompt, that.systemPrompt);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(provider, apiKey, baseUrl, model, systemPrompt);
+        return Objects.hash(provider, apiKey, baseUrl, model, connectTimeoutSeconds,
+                readTimeoutSeconds, sseTimeoutMillis, systemPrompt);
     }
 
     public String getProvider() {
@@ -85,6 +117,39 @@ public class AiProperties {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    public int getConnectTimeoutSeconds() {
+        return connectTimeoutSeconds;
+    }
+
+    public void setConnectTimeoutSeconds(int connectTimeoutSeconds) {
+        if (connectTimeoutSeconds <= 0) {
+            throw new IllegalArgumentException("AI连接超时必须大于0");
+        }
+        this.connectTimeoutSeconds = connectTimeoutSeconds;
+    }
+
+    public int getReadTimeoutSeconds() {
+        return readTimeoutSeconds;
+    }
+
+    public void setReadTimeoutSeconds(int readTimeoutSeconds) {
+        if (readTimeoutSeconds <= 0) {
+            throw new IllegalArgumentException("AI读取超时必须大于0");
+        }
+        this.readTimeoutSeconds = readTimeoutSeconds;
+    }
+
+    public long getSseTimeoutMillis() {
+        return sseTimeoutMillis;
+    }
+
+    public void setSseTimeoutMillis(long sseTimeoutMillis) {
+        if (sseTimeoutMillis <= 0) {
+            throw new IllegalArgumentException("AI SSE超时必须大于0");
+        }
+        this.sseTimeoutMillis = sseTimeoutMillis;
     }
 
     public String getSystemPrompt() {

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import top.jiangmok.ratelimiter.exception.DuplicateSubmitException;
 import top.jiangmok.ratelimiter.exception.RateLimitException;
 
@@ -265,6 +266,18 @@ public class GlobalExceptionHandler  {
         log.warn("接口不存在异常，请求地址：{}，异常信息：{}", request.getRequestURI(), message);
         //返回统一接口不存在响应
         return R.notFound(message);
+    }
+
+    /**
+     * Spring Boot 3 中静态资源或未知路径未命中时的 404 适配。
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public R<String> handleNoResourceFoundException(NoResourceFoundException e,
+                                                     HttpServletRequest request) {
+        log.warn("资源不存在，请求地址：{}，异常信息：{}",
+                request.getRequestURI(), e.getMessage());
+        return R.notFound("资源不存在: " + request.getRequestURI());
     }
 
     /**

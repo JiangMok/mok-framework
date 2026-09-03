@@ -23,6 +23,9 @@ import com.mok.framework.mail.controller.MailLogController;
 import com.mok.framework.mail.controller.MailRecipientController;
 import com.mok.framework.mail.controller.MailSenderController;
 import com.mok.framework.model.dto.RefreshTokenRequest;
+import com.mok.framework.model.dto.LogoutRequest;
+import com.mok.framework.model.dto.PasswordChangeRequest;
+import com.mok.framework.model.dto.PasswordResetRequest;
 import com.mok.framework.model.entity.RoleEntity;
 import com.mok.framework.monitor.controller.MonitorController;
 import com.mok.framework.mq.controller.MqFailedMessageController;
@@ -99,7 +102,7 @@ class SecurityContractTest {
             OperationLogController.class);
 
     private static final Map<Class<?>, Set<String>> INTENTIONAL_PUBLIC_METHODS = Map.of(
-            AuthController.class, Set.of("loadUser", "refreshToken"),
+            AuthController.class, Set.of("loadUser", "refreshToken", "logOut"),
             CaptchaController.class, Set.of("generate", "validate"),
             PublicAvatarController.class, Set.of("getAvatar"));
 
@@ -157,13 +160,31 @@ class SecurityContractTest {
         }
 
         Method logout = findMethod(AuthController.class, "logOut");
-        assertTrue(logout.isAnnotationPresent(SaCheckLogin.class), "退出接口必须要求登录");
+        assertTrue(logout.isAnnotationPresent(SaIgnore.class),
+                "退出接口必须允许使用 refreshToken 独立完成注销");
+        assertFalse(logout.isAnnotationPresent(SaCheckLogin.class),
+                "退出接口不能强制要求仍有效的 accessToken");
         assertTrue(logout.isAnnotationPresent(PostMapping.class), "退出接口必须使用 POST");
+        Parameter logoutRequest = logout.getParameters()[0];
+        assertEquals(LogoutRequest.class, logoutRequest.getType());
+        RequestBody logoutRequestBody = logoutRequest.getAnnotation(RequestBody.class);
+        assertNotNull(logoutRequestBody, "退出凭据必须使用 JSON 请求体");
+        assertFalse(logoutRequestBody.required(), "仅凭有效 accessToken 也必须可以退出");
 
         Method refresh = findMethod(AuthController.class, "refreshToken");
         Parameter request = refresh.getParameters()[0];
         assertEquals(RefreshTokenRequest.class, request.getType());
         assertTrue(request.isAnnotationPresent(RequestBody.class), "刷新令牌必须放在 JSON 请求体中");
+
+        Method updatePassword = findMethod(UserController.class, "updateUserPwd");
+        Parameter passwordRequest = updatePassword.getParameters()[0];
+        assertEquals(PasswordChangeRequest.class, passwordRequest.getType());
+        assertTrue(passwordRequest.isAnnotationPresent(RequestBody.class), "修改密码必须使用专用请求体");
+
+        Method resetPassword = findMethod(UserController.class, "resetUserPwdByUserId");
+        Parameter resetRequest = resetPassword.getParameters()[1];
+        assertEquals(PasswordResetRequest.class, resetRequest.getType());
+        assertTrue(resetRequest.isAnnotationPresent(RequestBody.class), "重置密码必须提交新密码请求体");
     }
 
     @Test
