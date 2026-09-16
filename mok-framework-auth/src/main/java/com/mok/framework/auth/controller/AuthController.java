@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.stp.parameter.SaLoginParameter;
 import com.mok.framework.auth.service.PermissionAuthService;
+import com.mok.framework.auth.service.LoginCryptoService;
 import com.mok.framework.auth.service.RefreshTokenIdentity;
 import com.mok.framework.auth.service.RefreshTokenService;
 import com.mok.framework.auth.service.TokenBlackListService;
@@ -17,6 +18,8 @@ import top.jiangmok.operationlog.annotation.OperationLog;
 import top.jiangmok.operationlog.enums.BusinessType;
 import com.mok.framework.common.utils.LogUtils;
 import com.mok.framework.model.dto.LoginRequest;
+import com.mok.framework.model.dto.LoginCredentials;
+import com.mok.framework.model.dto.LoginChallengeResponse;
 import com.mok.framework.model.dto.LoginResponse;
 import com.mok.framework.model.dto.LogoutRequest;
 import com.mok.framework.model.dto.RefreshTokenRequest;
@@ -26,6 +29,7 @@ import top.jiangmok.ratelimiter.annotation.PreventDuplicate;
 import top.jiangmok.ratelimiter.annotation.RateLimit;
 import top.jiangmok.ratelimiter.enums.RateLimitScope;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -50,6 +54,7 @@ public class AuthController {
     private final RoleService roleService;
     private final RefreshTokenService refreshTokenService;
     private final SecuritySessionService securitySessionService;
+    private final LoginCryptoService loginCryptoService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final PermissionAuthService permissionAuthService;
@@ -60,7 +65,8 @@ public class AuthController {
                           PermissionAuthService permissionAuthService,
                           RoleService roleService,
                           RefreshTokenService refreshTokenService,
-                          SecuritySessionService securitySessionService) {
+                          SecuritySessionService securitySessionService,
+                          LoginCryptoService loginCryptoService) {
         this.userService = userService;
         this.captchaService = captchaService;
         this.tokenBlackListService = tokenBlackListService;
@@ -68,6 +74,17 @@ public class AuthController {
         this.roleService = roleService;
         this.refreshTokenService = refreshTokenService;
         this.securitySessionService = securitySessionService;
+        this.loginCryptoService = loginCryptoService;
+    }
+
+    /** 获取一次性登录凭证，响应禁止被浏览器或代理缓存。 */
+    @RateLimit(scope = RateLimitScope.IP, limit = 20, message = "登录凭证请求过于频繁，请稍后重试")
+    @GetMapping("/login-challenge")
+    @SaIgnore
+    public R<LoginChallengeResponse> loginChallenge(HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Pragma", "no-cache");
+        return R.ok(loginCryptoService.createChallenge());
     }
 
     /**
@@ -76,10 +93,11 @@ public class AuthController {
      * @param loginRequest
      * @return
      */
-    @OperationLog(title = "用户登录", businessType = BusinessType.LOGIN)
+    @OperationLog(title = "用户登录", businessType = BusinessType.LOGIN,
+            saveRequestParam = false, saveResponseData = false)
     @RateLimit(scope = RateLimitScope.IP, limit = 5, message = "登录请求过于频繁，请稍后重试")
     @PreventDuplicate(
-            key = "#loginRequest.username",
+            key = "#loginRequest.captchaKey",
             lockTime = 5,
             message = "请勿重复提交登录请求")
     @PostMapping("/login")
@@ -90,14 +108,15 @@ public class AuthController {
             return R.error(1002, "验证码错误或已过期");
         }
 
-        UserEntity userEntity = userService.getByUserName(loginRequest.getUsername());
+        LoginCredentials credentials = loginCryptoService.decryptAndConsume(loginRequest);
+        UserEntity userEntity = userService.getByUserName(credentials.getUsername());
 
         if (userEntity == null) {
             return R.passwordError();
         }
 
         //判断密码
-        if (!passwordEncoder.matches(loginRequest.getPassword(), userEntity.getPassword())) {
+        if (!passwordEncoder.matches(credentials.getPassword(), userEntity.getPassword())) {
             return R.passwordError();
         }
 

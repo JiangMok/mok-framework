@@ -102,7 +102,7 @@ class SecurityContractTest {
             OperationLogController.class);
 
     private static final Map<Class<?>, Set<String>> INTENTIONAL_PUBLIC_METHODS = Map.of(
-            AuthController.class, Set.of("loadUser", "refreshToken", "logOut"),
+            AuthController.class, Set.of("loadUser", "refreshToken", "logOut", "loginChallenge"),
             CaptchaController.class, Set.of("generate", "validate"),
             PublicAvatarController.class, Set.of("getAvatar"));
 
@@ -262,7 +262,7 @@ class SecurityContractTest {
 
     private static boolean isLoginLifecycleMethod(Class<?> controller, Method method) {
         return controller == AuthController.class
-                && Set.of("loadUser", "refreshToken", "logOut").contains(method.getName());
+                && Set.of("loadUser", "refreshToken", "logOut", "loginChallenge").contains(method.getName());
     }
 
     private static boolean isSelfServiceMethod(Class<?> controller, Method method) {

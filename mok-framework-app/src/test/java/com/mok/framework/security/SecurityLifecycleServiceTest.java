@@ -3,10 +3,18 @@ package com.mok.framework.security;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.temp.SaTempUtil;
 import com.mok.framework.auth.config.SaTokenConfigure;
+import com.mok.framework.auth.config.LoginCryptoProperties;
+import com.mok.framework.auth.service.impl.RsaLoginCryptoServiceImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mok.framework.model.dto.LoginChallengeResponse;
+import com.mok.framework.model.dto.LoginCredentials;
+import com.mok.framework.model.dto.LoginRequest;
+import com.mok.framework.model.dto.LoginResponse;
 import com.mok.framework.auth.controller.AuthController;
 import com.mok.framework.auth.mapper.PermissionAuthMapper;
 import com.mok.framework.auth.mapper.UserAuthMapper;
 import com.mok.framework.auth.service.PermissionAuthService;
+import com.mok.framework.auth.service.LoginCryptoService;
 import com.mok.framework.auth.service.RefreshTokenIdentity;
 import com.mok.framework.auth.service.RefreshTokenService;
 import com.mok.framework.auth.service.TokenBlackListService;
@@ -47,6 +55,11 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.mockito.MockedStatic;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -58,6 +71,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyFactory;
+import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.MGF1ParameterSpec;
+import java.util.Base64;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import javax.crypto.Cipher;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -77,6 +105,177 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings({"unchecked", "rawtypes"})
 class SecurityLifecycleServiceTest {
 
+    private static KeyPair loginKeyPair;
+    private static jakarta.validation.ValidatorFactory loginValidatorFactory;
+
+    @BeforeAll
+    static void createEphemeralLoginKey() throws Exception {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(3072);
+        loginKeyPair = generator.generateKeyPair();
+        loginValidatorFactory = Validation.buildDefaultValidatorFactory();
+    }
+
+    @AfterAll
+    static void closeLoginValidatorFactory() {
+        if (loginValidatorFactory != null) {
+            loginValidatorFactory.close();
+        }
+    }
+
+    @Test
+    void encryptedLoginRoundTripConsumesChallengeOnce(@TempDir Path directory) throws Exception {
+        LoginCryptoFixture fixture = loginCryptoFixture(directory);
+        LoginChallengeResponse challenge = fixture.service().createChallenge();
+        LoginRequest request = encryptedLogin(challenge, "管理员", "Secret123", "captcha-key");
+
+        LoginCredentials credentials = fixture.service().decryptAndConsume(request);
+
+        assertEquals("管理员", credentials.getUsername());
+        assertEquals("Secret123", credentials.getPassword());
+        assertEquals(120, challenge.getExpiresIn());
+        assertFalse(credentials.toString().contains("Secret123"));
+        assertFalse(request.toString().contains(request.getEncryptedCredentials()));
+        assertThrows(BusinessException.class, () -> fixture.service().decryptAndConsume(request));
+        verify(fixture.redis().opsForValue()).setIfAbsent(
+                "security:login:challenge:" + challenge.getChallengeId(), "login-v1",
+                120L, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void encryptedLoginRejectsTamperingAndExpiredChallenge(@TempDir Path directory) throws Exception {
+        LoginCryptoFixture fixture = loginCryptoFixture(directory);
+        LoginChallengeResponse challenge = fixture.service().createChallenge();
+        LoginRequest request = encryptedLogin(challenge, "admin", "Secret123", "captcha-key");
+        String validCiphertext = request.getEncryptedCredentials();
+        byte[] bytes = Base64.getDecoder().decode(validCiphertext);
+        bytes[0] ^= 1;
+        request.setEncryptedCredentials(Base64.getEncoder().encodeToString(bytes));
+        BusinessException tampered = assertThrows(BusinessException.class,
+                () -> fixture.service().decryptAndConsume(request));
+        assertEquals("登录凭据无效或已过期，请重新登录", tampered.getMessage());
+        assertEquals(null, tampered.getCause());
+
+        request.setEncryptedCredentials(validCiphertext);
+        fixture.challenges().clear(); // 模拟Redis TTL已经到期，不连接真实Redis。
+        assertThrows(BusinessException.class, () -> fixture.service().decryptAndConsume(request));
+    }
+
+    @Test
+    void encryptedLoginBindsCaptchaAndKeyAndValidatesPlaintext(@TempDir Path directory) throws Exception {
+        LoginCryptoFixture fixture = loginCryptoFixture(directory);
+        LoginChallengeResponse challenge = fixture.service().createChallenge();
+        LoginRequest request = encryptedLogin(challenge, "admin", "Secret123", "captcha-key");
+        request.setCaptchaKey("another-captcha");
+        assertThrows(BusinessException.class, () -> fixture.service().decryptAndConsume(request));
+        request.setCaptchaKey("captcha-key");
+        request.setKeyId("unknown-key");
+        assertThrows(BusinessException.class, () -> fixture.service().decryptAndConsume(request));
+
+        LoginRequest blankPassword = encryptedLogin(challenge, "admin", " ", "captcha-key");
+        assertThrows(BusinessException.class, () -> fixture.service().decryptAndConsume(blankPassword));
+        LoginRequest oldPlaintext = new ObjectMapper().readerFor(LoginRequest.class)
+                .without(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .readValue("{\"username\":\"admin\",\"password\":\"Secret123\","
+                        + "\"captcha\":\"1234\",\"captchaKey\":\"captcha-key\"}");
+        assertThrows(BusinessException.class, () -> fixture.service().decryptAndConsume(oldPlaintext));
+    }
+
+    @Test
+    void onlyOneConcurrentLoginCanConsumeTheChallenge(@TempDir Path directory) throws Exception {
+        LoginCryptoFixture fixture = loginCryptoFixture(directory);
+        LoginRequest request = encryptedLogin(
+                fixture.service().createChallenge(), "admin", "Secret123", "captcha-key");
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            java.util.concurrent.Callable<Boolean> attempt = () -> {
+                try {
+                    fixture.service().decryptAndConsume(request);
+                    return true;
+                } catch (BusinessException expected) {
+                    return false;
+                }
+            };
+            var results = executor.invokeAll(List.of(attempt, attempt));
+            assertEquals(1, (results.get(0).get() ? 1 : 0) + (results.get(1).get() ? 1 : 0));
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void missingPrivateKeyFailsWithoutGeneratingAReplacement() {
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
+            assertThrows(IllegalStateException.class, () -> new RsaLoginCryptoServiceImpl(
+                    new LoginCryptoProperties(), mock(StringRedisTemplate.class),
+                    new ObjectMapper(), factory.getValidator()));
+        }
+    }
+
+    @Test
+    void challengeResponseDisablesCachingAndInvalidCaptchaSkipsDecryption() {
+        LoginCryptoService cryptoService = mock(LoginCryptoService.class);
+        CaptchaService captchaService = mock(CaptchaService.class);
+        UserAuthService users = mock(UserAuthService.class);
+        AuthController controller = new AuthController(users, captchaService,
+                mock(TokenBlackListService.class), mock(PermissionAuthService.class),
+                mock(RoleService.class), mock(RefreshTokenService.class),
+                mock(SecuritySessionService.class), cryptoService);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        controller.loginChallenge(response);
+        assertEquals("no-store", response.getHeader("Cache-Control"));
+
+        R<LoginResponse> result = controller.loadUser(
+                new LoginRequest("login-v1", "invalid", "wrong", "captcha-key"));
+        assertEquals(1002, result.getCode());
+        verify(cryptoService, never()).decryptAndConsume(any());
+        verify(users, never()).getByUserName(anyString());
+    }
+
+    private LoginCryptoFixture loginCryptoFixture(Path directory) throws Exception {
+        Path privateKey = directory.resolve("ephemeral-login-key.pem");
+        Files.writeString(privateKey, "-----BEGIN PRIVATE KEY-----\n"
+                + Base64.getEncoder().encodeToString(loginKeyPair.getPrivate().getEncoded())
+                + "\n-----END PRIVATE KEY-----\n", StandardCharsets.US_ASCII);
+        LoginCryptoProperties properties = new LoginCryptoProperties();
+        properties.setPrivateKeyPath(privateKey.toAbsolutePath().toString());
+        StringRedisTemplate redis = mock(StringRedisTemplate.class);
+        ValueOperations<String, String> operations = mock(ValueOperations.class);
+        when(redis.opsForValue()).thenReturn(operations);
+        Map<String, String> challenges = new ConcurrentHashMap<>();
+        when(operations.setIfAbsent(anyString(), anyString(), anyLong(), eq(TimeUnit.SECONDS)))
+                .thenAnswer(invocation -> challenges.putIfAbsent(
+                        invocation.getArgument(0), invocation.getArgument(1)) == null);
+        when(redis.execute(any(RedisScript.class), any(List.class), any(Object[].class)))
+                .thenAnswer(invocation -> {
+                    List<String> keys = invocation.getArgument(1);
+                    Object[] arguments = (Object[]) invocation.getRawArguments()[2];
+                    return challenges.remove(keys.get(0), arguments[0]) ? 1L : 0L;
+                });
+        Validator validator = loginValidatorFactory.getValidator();
+        return new LoginCryptoFixture(new RsaLoginCryptoServiceImpl(
+                properties, redis, new ObjectMapper(), validator), redis, challenges);
+    }
+
+    private LoginRequest encryptedLogin(LoginChallengeResponse challenge, String username,
+                                        String password, String captchaKey) throws Exception {
+        var publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(
+                Base64.getDecoder().decode(challenge.getPublicKey())));
+        byte[] plaintext = new ObjectMapper().writeValueAsBytes(Map.of(
+                "username", username, "password", password,
+                "challengeId", challenge.getChallengeId(), "captchaKey", captchaKey));
+        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey, new OAEPParameterSpec(
+                "SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT));
+        return new LoginRequest(challenge.getKeyId(),
+                Base64.getEncoder().encodeToString(cipher.doFinal(plaintext)), "1234", captchaKey);
+    }
+
+    private record LoginCryptoFixture(RsaLoginCryptoServiceImpl service,
+                                       StringRedisTemplate redis,
+                                       Map<String, String> challenges) {
+    }
+
     @Test
     void logoutRevokesTheCurrentRefreshTokenAndBlacklistsAccessToken() {
         UserAuthService userAuthService = mock(UserAuthService.class);
@@ -88,7 +287,7 @@ class SecurityLifecycleServiceTest {
         SecuritySessionService sessionService = mock(SecuritySessionService.class);
         AuthController controller = new AuthController(userAuthService, captchaService,
                 blacklistService, permissionAuthService, roleService,
-                refreshTokenService, sessionService);
+                refreshTokenService, sessionService, mock(LoginCryptoService.class));
         LogoutRequest logoutRequest = new LogoutRequest();
         logoutRequest.setRefreshToken("refresh-1");
         HttpServletRequest servletRequest = mock(HttpServletRequest.class);
@@ -122,7 +321,7 @@ class SecurityLifecycleServiceTest {
         TokenBlackListService blacklistService = mock(TokenBlackListService.class);
         AuthController controller = new AuthController(userAuthService, mock(CaptchaService.class),
                 blacklistService, mock(PermissionAuthService.class), mock(RoleService.class),
-                refreshTokenService, sessionService);
+                refreshTokenService, sessionService, mock(LoginCryptoService.class));
         LogoutRequest logoutRequest = new LogoutRequest();
         logoutRequest.setRefreshToken("refresh-1");
         HttpServletRequest servletRequest = mock(HttpServletRequest.class);
@@ -154,7 +353,7 @@ class SecurityLifecycleServiceTest {
         TokenBlackListService blacklistService = mock(TokenBlackListService.class);
         AuthController controller = new AuthController(userAuthService, mock(CaptchaService.class),
                 blacklistService, mock(PermissionAuthService.class), mock(RoleService.class),
-                refreshTokenService, sessionService);
+                refreshTokenService, sessionService, mock(LoginCryptoService.class));
         LogoutRequest logoutRequest = new LogoutRequest();
         logoutRequest.setRefreshToken("refresh-1");
         HttpServletRequest servletRequest = mock(HttpServletRequest.class);
@@ -179,7 +378,7 @@ class SecurityLifecycleServiceTest {
         TokenBlackListService blacklistService = mock(TokenBlackListService.class);
         AuthController controller = new AuthController(userAuthService, mock(CaptchaService.class),
                 blacklistService, mock(PermissionAuthService.class), mock(RoleService.class),
-                mock(RefreshTokenService.class), sessionService);
+                mock(RefreshTokenService.class), sessionService, mock(LoginCryptoService.class));
         HttpServletRequest servletRequest = mock(HttpServletRequest.class);
         when(servletRequest.getHeader("Authorization")).thenReturn("Bearer access-1");
         when(sessionService.isCurrentVersion("user-1", 0L)).thenReturn(true);
@@ -208,7 +407,7 @@ class SecurityLifecycleServiceTest {
         TokenBlackListService blacklistService = mock(TokenBlackListService.class);
         AuthController controller = new AuthController(userAuthService, mock(CaptchaService.class),
                 blacklistService, mock(PermissionAuthService.class), mock(RoleService.class),
-                refreshTokenService, sessionService);
+                refreshTokenService, sessionService, mock(LoginCryptoService.class));
         LogoutRequest logoutRequest = new LogoutRequest();
         logoutRequest.setRefreshToken("refresh-2");
         HttpServletRequest servletRequest = mock(HttpServletRequest.class);
@@ -238,7 +437,7 @@ class SecurityLifecycleServiceTest {
         AuthController controller = new AuthController(mock(UserAuthService.class),
                 mock(CaptchaService.class), mock(TokenBlackListService.class),
                 mock(PermissionAuthService.class), mock(RoleService.class),
-                mock(RefreshTokenService.class), sessionService);
+                mock(RefreshTokenService.class), sessionService, mock(LoginCryptoService.class));
         HttpServletRequest servletRequest = mock(HttpServletRequest.class);
 
         R<String> result = controller.logOut(null, servletRequest);
@@ -254,7 +453,7 @@ class SecurityLifecycleServiceTest {
         SecuritySessionService sessionService = mock(SecuritySessionService.class);
         AuthController controller = new AuthController(userAuthService, mock(CaptchaService.class),
                 mock(TokenBlackListService.class), mock(PermissionAuthService.class),
-                mock(RoleService.class), refreshTokenService, sessionService);
+                mock(RoleService.class), refreshTokenService, sessionService, mock(LoginCryptoService.class));
         RefreshTokenRequest request = new RefreshTokenRequest();
         request.setRefreshToken("refresh-old");
         when(refreshTokenService.consume("refresh-old"))

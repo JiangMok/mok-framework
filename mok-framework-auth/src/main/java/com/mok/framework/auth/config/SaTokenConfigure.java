@@ -68,6 +68,7 @@ public class SaTokenConfigure {
                 .addInclude("/**")
                 .addExclude(
                         "/auth/login",        // 登录接口
+                        "/auth/login-challenge", // 一次性登录凭证与公钥
                         "/auth/refresh",      // 刷新 token
                         "/auth/logout",       // 支持使用 refresh token 退出
                         "/captcha/**",        // 验证码接口

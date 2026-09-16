@@ -1,6 +1,8 @@
 package com.mok.framework.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.util.Objects;
 
 /**
@@ -10,16 +12,20 @@ import java.util.Objects;
  */
 public class LoginRequest  {
 
-    @NotBlank(message = "用户名不能为空")
-    private String username;
+    @NotBlank(message = "密钥标识不能为空")
+    @Pattern(regexp = "[A-Za-z0-9_-]{1,64}", message = "密钥标识格式错误")
+    private String keyId;
 
-    @NotBlank(message = "密码不能为空")
-    private String password;
+    @NotBlank(message = "加密登录凭据不能为空")
+    @Size(min = 512, max = 512, message = "加密登录凭据长度错误")
+    private String encryptedCredentials;
 
     @NotBlank(message = "验证码不能为空")
+    @Size(max = 16, message = "验证码长度错误")
     private String captcha;
 
     @NotBlank(message = "验证码 key 不能为空")
+    @Size(max = 64, message = "验证码 key 长度错误")
     private String captchaKey;
 
     // 默认构造函数
@@ -27,28 +33,28 @@ public class LoginRequest  {
     }
 
     // 全参数构造函数（可选）
-    public LoginRequest(String username, String password, String captcha, String captchaKey) {
-        this.username = username;
-        this.password = password;
+    public LoginRequest(String keyId, String encryptedCredentials, String captcha, String captchaKey) {
+        this.keyId = keyId;
+        this.encryptedCredentials = encryptedCredentials;
         this.captcha = captcha;
         this.captchaKey = captchaKey;
     }
 
     // Getter 和 Setter 方法
-    public String getUsername() {
-        return username;
+    public String getKeyId() {
+        return keyId;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setKeyId(String keyId) {
+        this.keyId = keyId;
     }
 
-    public String getPassword() {
-        return password;
+    public String getEncryptedCredentials() {
+        return encryptedCredentials;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setEncryptedCredentials(String encryptedCredentials) {
+        this.encryptedCredentials = encryptedCredentials;
     }
 
     public String getCaptcha() {
@@ -77,8 +83,8 @@ public class LoginRequest  {
             return false;
         }
         LoginRequest that = (LoginRequest) o;
-        return Objects.equals(username, that.username) &&
-                Objects.equals(password, that.password) &&
+        return Objects.equals(keyId, that.keyId) &&
+                Objects.equals(encryptedCredentials, that.encryptedCredentials) &&
                 Objects.equals(captcha, that.captcha) &&
                 Objects.equals(captchaKey, that.captchaKey);
     }
@@ -86,17 +92,15 @@ public class LoginRequest  {
     // hashCode 方法
     @Override
     public int hashCode() {
-        return Objects.hash(username, password, captcha, captchaKey);
+        return Objects.hash(keyId, encryptedCredentials, captcha, captchaKey);
     }
 
     // toString 方法
     @Override
     public String toString() {
         return "LoginRequest{" +
-                "username='" + username + '\'' +
-                ", password='" + "[PROTECTED]" + '\'' + // 出于安全考虑，不直接显示密码
-                ", captcha='" + captcha + '\'' +
-                ", captchaKey='" + captchaKey + '\'' +
+                "keyId='" + keyId + '\'' +
+                ", encryptedCredentials='[PROTECTED]'" +
                 '}';
     }
 }
